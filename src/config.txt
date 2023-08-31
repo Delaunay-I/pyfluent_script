@@ -1,0 +1,9 @@
+-case data/naca_SIMPLE.cas.h5
+
+-nvars 3
+
+-nSnapshots 100
+-nDMDmodes 50
+
+-nIter 1500
+-dmd_iters 550

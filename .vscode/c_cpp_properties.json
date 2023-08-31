@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${default}",
+                "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22621.0/ucrt",
+                "C:/Program Files/ANSYS Inc/v232/fluent/ntbin/clang/MSVC/14.10.25017/include",
+                "C:/Program Files/ANSYS Inc/v232/fluent/fluent23.2.0/src/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "cStandard": "c17",
+            "intelliSenseMode": "windows-clang-x64",
+            "compilerPath": "C:/Program Files/LLVM/bin/clang.exe",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}
