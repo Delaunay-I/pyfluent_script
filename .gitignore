@@ -1,0 +1,6 @@
+solver_data/
+out/
+libudf/
+error/
+
+*.trn
