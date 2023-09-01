@@ -55,6 +55,7 @@ tui.solve.monitors.residual.n_display(ITER_NUM)
 # Initialize the snapshots matrix
 data = None
 # all_s = []
+solver.solution.initialization.hybrid_initialize()
 
 for iter in range(1, ITER_NUM+1):
     solver.solution.run_calculation.iterate(iter_count=1)
