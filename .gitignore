@@ -8,3 +8,4 @@ venv/pyvenv.cfg
 .gitignore
 venv/Scripts/pythonw.exe
 venv/Scripts/python.exe
+tests/__pycache__/test_div.cpython-39-pytest-7.4.0.pyc
