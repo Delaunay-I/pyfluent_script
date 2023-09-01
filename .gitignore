@@ -4,3 +4,7 @@ libudf/
 error/
 
 *.trn
+venv/pyvenv.cfg
+.gitignore
+venv/Scripts/pythonw.exe
+venv/Scripts/python.exe
