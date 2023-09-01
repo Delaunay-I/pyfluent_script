@@ -56,8 +56,8 @@ DEFINE_ON_DEMAND(set_Field_udms)
     Thread *t;
     cell_t c;
 
-    const char* filename = "./solver_data/DMDUpdate.csv";
-    // const char* filename = "./solver_data/solution_slim.csv";
+    // const char* filename = "./solver_data/DMDUpdate.csv";
+    const char* filename = "./solver_data/solution_slim.csv";
 
     FILE* file = fopen(filename, "r");
     if (file == NULL){
@@ -227,6 +227,17 @@ thread_loop_f(ft, d)
         }
         end_c_loop(c, t)
     }
+
+        const char* fname = "total_divergence.txt";
+
+    FILE* file = fopen(fname, "w");
+    if (file == NULL){
+        Message0("ERROR: cannot open the file %s. Abort UDF execution.\n", fname);
+        perror("fopen");
+        return 1;
+    }
+    fprintf(file, "%.16Le\n", tot_divergence);
+    fclose(file);
 
     Message0("DMD Gradients recorded in UDMs\n");
     Message0("Total divergence: %f\n", tot_divergence);

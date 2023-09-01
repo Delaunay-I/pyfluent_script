@@ -70,7 +70,7 @@ DEFINE_EXECUTE_AT_END(write_step)
 }
 
 
-DEFINE_ON_DEMAND(write_slimUpdate_onDemand)
+DEFINE_ON_DEMAND(write_slimSoln_onDemand)
 {
     const char* filename = "solver_data/solution_slim.csv";
     Thread *t;
