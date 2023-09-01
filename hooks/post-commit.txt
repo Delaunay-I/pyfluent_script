@@ -1,0 +1,3 @@
+#!/bin/sh
+#
+curl -X POST "http://localhost:8080/git/notifyCommit?url=file://C:\working_dir\pyfluent_script"
