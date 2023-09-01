@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import os
 
 from dmd import DMD
-
+from functions import solve_steps
 from config_parser import get_configuration
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -56,10 +56,12 @@ tui.solve.monitors.residual.n_display(ITER_NUM)
 data = None
 # all_s = []
 solver.solution.initialization.hybrid_initialize()
+res_norm = []
 
 for iter in range(1, ITER_NUM+1):
-    solver.solution.run_calculation.iterate(iter_count=1)
-    
+    res_avg = solve_steps(solver, num_iters=1)
+    res_norm.append(res_avg)
+
     soln_file_path = os.path.normpath(os.path.join(script_dir, "..", "solver_data", "solution.csv"))
     df = pd.read_csv(soln_file_path, sep="\t", skiprows=1, index_col=0)
     vSoln = np.concatenate([df[col] for col in df.columns[-NUM_VARS:]]).reshape(-1, 1)
@@ -93,6 +95,9 @@ for iter in range(1, ITER_NUM+1):
         if APPLY_DMD:
             tui.define.user_defined.execute_on_demand('"apply_man_update::libudf"')
 
+
+residual_norm = np.array(res_norm)
+np.savetxt('residual_avg.plt', residual_norm)
 
 
 # all_s = np.array(all_s)
