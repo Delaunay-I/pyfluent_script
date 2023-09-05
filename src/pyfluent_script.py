@@ -102,6 +102,7 @@ for iter in range(1, ITER_NUM+1):
         if APPLY_DMD and (not F_AUTO_DMD or my_dmd.r >= 9):
             my_dmd.collect_ML_data()
             effectiveness_proba = ML_proba(my_dmd.dmd_dataset)
+            print(f"Probability of the DMD update to be effective: {effectiveness_proba}")
 
             if (effectiveness_proba > 0.9):
                 tui.define.user_defined.execute_on_demand('"apply_man_update::libudf"')
