@@ -1,7 +1,10 @@
 import joblib
 import numpy as np
 import pandas as pd
+import os
 
+script_dir = os.path.dirname(os.path.abspath(__file__))
+ML_model_path = os.path.normpath(os.path.join(script_dir, "ML_xgb.joblib"))
 
 def data_cleanser(data_df):
     dmd_df_new = data_df.copy()
@@ -47,7 +50,7 @@ def ML_proba(list):
 
     # Loading the trained RandomForest model
     # clf = joblib.load("DMD_ML_v02.joblib")
-    clf = joblib.load("./ML_xgb.joblib")
+    clf = joblib.load(ML_model_path)
     # Getting the number of features required for this model
     # n_input_feats = clf.named_steps['randomforestclassifier'].n_features_in_
     n_input_feats = clf.named_steps['xgbclassifier'].n_features_in_
