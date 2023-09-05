@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import os
 
 from dmd import DMD
-from functions import solve_steps
+from functions import TimeAdvance
 from config_parser import get_configuration
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -18,14 +18,15 @@ NUM_SNAPS, NUM_DMD_MODES, ITER_NUM, DMD_ITER, NUM_VARS, case_file_path, outfName
 
 DT = 1
 assert min(DMD_ITER) > NUM_SNAPS, "number of iterations is smaller than number of snapshots"
-CALC_DMD = True
+FLAG_DMD = True
 CALC_MODES = True
 APPLY_DMD = True
+F_AUTO_DMD = True
 
 # =======================
 # Problem Setup
 # =======================
-solver = launch_fluent(version="2d", precision="double", processor_count=1, mode="solver")
+solver = launch_fluent(version="2d", precision="double", processor_count=1, mode="solver", show_gui=True)
 
 tui = solver.tui
 # Read the mesh file and set the configuration
@@ -58,9 +59,13 @@ data = None
 solver.solution.initialization.hybrid_initialize()
 res_norm = []
 
+timeAdvance_tools= TimeAdvance(iResWinSize=100, iDummyDMDIter=10)
+previous_dmdUpdate_iter = ITER_NUM*2
+
 for iter in range(1, ITER_NUM+1):
-    res_avg = solve_steps(solver, num_iters=1)
+    res_avg, slope_ratio = timeAdvance_tools.solve_steps(solver, num_iters=1)
     res_norm.append(res_avg)
+
 
     soln_file_path = os.path.normpath(os.path.join(script_dir, "..", "solver_data", "solution.csv"))
     df = pd.read_csv(soln_file_path, sep="\t", skiprows=1, index_col=0)
@@ -77,7 +82,7 @@ for iter in range(1, ITER_NUM+1):
         if data.shape[1] > NUM_SNAPS:
             data = data[:, -NUM_SNAPS:]
 
-    if iter in DMD_ITER and CALC_DMD:
+    if (iter in DMD_ITER and FLAG_DMD) or (abs(slope_ratio - 1) <= 1e-3 and FLAG_DMD and F_AUTO_DMD):
     # if iter > NUM_SNAPS:
         my_dmd = DMD(data, NUM_VARS, NUM_DMD_MODES, verbose=2)
         my_dmd.calc_DMD()
@@ -94,6 +99,17 @@ for iter in range(1, ITER_NUM+1):
 
         if APPLY_DMD:
             tui.define.user_defined.execute_on_demand('"apply_man_update::libudf"')
+            if F_AUTO_DMD:
+                previous_dmdUpdate_iter = iter
+                print("\n------Temporarily deactivating DMD...------\n")
+                FLAG_DMD = False
+
+
+    # mandating the solver to waint at least for NUM_SNAPS iterations, before applying another DMD update (for the auto DMD module)
+    if iter > previous_dmdUpdate_iter + NUM_SNAPS and F_AUTO_DMD and not FLAG_DMD:
+        print("\n------Re-activating DMD!!------\n")
+        FLAG_DMD = True
+
 
 
 residual_norm = np.array(res_norm)
