@@ -32,7 +32,7 @@ def data_cleanser(data_df):
     return dmd_df_new
 
 
-def effective_check(list):
+def ML_proba(list):
 
     column_names = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9',
                     'amp1', 'amp2', 'amp3', 'amp4', 'amp5', 'amp6', 'amp7', 'amp8', 'amp9',
@@ -42,10 +42,12 @@ def effective_check(list):
 
     df = pd.DataFrame(data = [list],
                       columns = column_names)
+    df = data_cleanser(df)
     print(df.shape)
+
     # Loading the trained RandomForest model
     # clf = joblib.load("DMD_ML_v02.joblib")
-    clf = joblib.load("/home/mirshahi/ANSLib/apps/ConvRateSpeedup/ML_xgb.joblib")
+    clf = joblib.load("./ML_xgb.joblib")
     # Getting the number of features required for this model
     # n_input_feats = clf.named_steps['randomforestclassifier'].n_features_in_
     n_input_feats = clf.named_steps['xgbclassifier'].n_features_in_
