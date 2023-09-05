@@ -202,7 +202,7 @@ class DMD:
         amps = self.eigs[:9]
         eigs = self.omega[:9]
         energies = None
-        mode_residual_predictions = self.time_dynamics2[-1, :9]
+        mode_residual_predictions = np.abs(self.time_dynamics2[100, :9])
 
         # computing DMD mode energies
         epsilon = np.linalg.inv(self.W) @ self.Sr @ self.Vr.conj().T

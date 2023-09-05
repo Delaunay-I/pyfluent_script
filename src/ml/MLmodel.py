@@ -26,7 +26,7 @@ def data_cleanser(data_df):
     for item in res_list:
         # log-scale the residaul values
         dmd_df_new[item] = dmd_df_new[item] + 1e-200
-        dmd_df_new[item] = np.log(dmd_df_new[item])
+        dmd_df_new[item] = np.log(abs(dmd_df_new[item]))
         dmd_df_new[item] = dmd_df_new[item]/dmd_df_new['s1']
 
     # Removing unnecessary features    
