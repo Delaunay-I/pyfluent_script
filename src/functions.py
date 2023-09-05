@@ -53,7 +53,7 @@ class TimeAdvance:
         if var1!=None and var2!=None and var3!=None:
             res_avg = (var1 + var2 + var3) / 3
             self.slope_analysis(res_avg, iter)
-            print(f"iter:\t{iter} continuity:{var1:.4e}\tx-velocity:{var2:.4e}\ty-velocity:{var3:.4e}\tSlope_ratio:{self.slope_ratio:.4f}")
+            print(f"iter:{iter:04} continuity:{var1:.4e}\tx-velocity:{var2:.4e}\ty-velocity:{var3:.4e}\tSlope_ratio:{self.slope_ratio:.4f}")
         else:
             print(my_result.getvalue())
             res_avg = 0
