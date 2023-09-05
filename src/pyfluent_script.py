@@ -105,7 +105,7 @@ for iter in range(1, ITER_NUM+1):
             effectiveness_proba = ML_proba(my_dmd.dmd_dataset)
 
             if (effectiveness_proba > ML_Proba_thresh):
-                print(f"\033[32mProbability of the DMD update to be effective: {effectiveness_proba}\033[0m")
+                print(f"\033[32mProbability of the DMD update to be effective: {effectiveness_proba:.3f}\033[0m")
 
                 tui.define.user_defined.execute_on_demand('"apply_man_update::libudf"')
                 if F_AUTO_DMD:
@@ -113,7 +113,7 @@ for iter in range(1, ITER_NUM+1):
                     print("\n------Temporarily deactivating DMD...------\n")
                     FLAG_DMD = False
             else:
-                print(f"\033[33mProbability of the DMD update to be effective: {effectiveness_proba}\033[0m")
+                print(f"\033[33mProbability of the DMD update to be effective: {effectiveness_proba:.3f}\033[0m")
 
 
     # mandating the solver to waint at least for NUM_SNAPS iterations, before applying another DMD update (for the auto DMD module)
