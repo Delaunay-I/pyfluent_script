@@ -12,6 +12,7 @@ import os
 from dmd import DMD
 from functions import TimeAdvance
 from config_parser import get_configuration
+from ml.MLmodel import ML_proba
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 NUM_SNAPS, NUM_DMD_MODES, ITER_NUM, DMD_ITER, NUM_VARS, case_file_path, outfName = get_configuration()
@@ -82,7 +83,7 @@ for iter in range(1, ITER_NUM+1):
         if data.shape[1] > NUM_SNAPS:
             data = data[:, -NUM_SNAPS:]
 
-    if (iter in DMD_ITER and FLAG_DMD) or (abs(slope_ratio - 1) <= 1e-3 and FLAG_DMD and F_AUTO_DMD):
+    if FLAG_DMD and ((iter in DMD_ITER) or (abs(slope_ratio - 1) <= 1e-3 and F_AUTO_DMD)):
     # if iter > NUM_SNAPS:
         my_dmd = DMD(data, NUM_VARS, NUM_DMD_MODES, verbose=2)
         my_dmd.calc_DMD()
@@ -97,12 +98,17 @@ for iter in range(1, ITER_NUM+1):
             # sVals = np.diag(my_dmd.Sr)
             # all_s.append(sVals/sVals[0])
 
-        if APPLY_DMD:
-            tui.define.user_defined.execute_on_demand('"apply_man_update::libudf"')
-            if F_AUTO_DMD:
-                previous_dmdUpdate_iter = iter
-                print("\n------Temporarily deactivating DMD...------\n")
-                FLAG_DMD = False
+        # the ML automation pipelien is only applicable when we have 9 modes
+        if APPLY_DMD and (not F_AUTO_DMD or my_dmd.r >= 9):
+            my_dmd.collect_ML_data()
+            effectiveness_proba = ML_proba(my_dmd.dmd_dataset)
+
+            if (effectiveness_proba > 0.9):
+                tui.define.user_defined.execute_on_demand('"apply_man_update::libudf"')
+                if F_AUTO_DMD:
+                    previous_dmdUpdate_iter = iter
+                    print("\n------Temporarily deactivating DMD...------\n")
+                    FLAG_DMD = False
 
 
     # mandating the solver to waint at least for NUM_SNAPS iterations, before applying another DMD update (for the auto DMD module)

@@ -10,6 +10,14 @@ if not os.path.exists(output_directory):
     os.makedirs(output_directory)
 
 class DMD:
+    """
+    A class that performs DMD analysis and use the DMD modes to compute an over-relaxation method
+
+    Parameters
+    ----------
+    self.r = rank of the truncated SVD. Can be updated by refine_num_modes method
+
+    """
     VERBOSE_NONE = 0
     VERBOSE_BASIC = 1
     VERBOSE_DETAILED = 2
@@ -44,6 +52,9 @@ class DMD:
         self.Atilde = None
         self.dmd_update = None
 
+        # Vector data for ML analysis
+        self.dmd_dataset = np.array([])
+
         DMD.counter += 1
 
     def log(self, message, level=VERBOSE_BASIC):
@@ -73,6 +84,8 @@ class DMD:
             else:
                 break
 
+        if (self.r < 9):
+            print(f"\033[1;31mThe current machine learning model for DMD automation is not applicable to this dataset.\nNumber of modes {self.r}\033[0m")
 
         I = np.identity(self.r)
         Gtilde = np.linalg.inv(I - self.Atilde) @ self.Atilde
@@ -175,3 +188,25 @@ class DMD:
         num_unstable_modes = np.sum(np.abs(eigs) >= 1)
         self.log(f"number of unstable modes: {num_unstable_modes}", self.VERBOSE_BASIC)
         return len(eigs) - num_unstable_modes
+
+
+    def collect_ML_data(self, ):
+        """
+        combines the required dataset to feed to the ML pipeline of the DMD automation framework
+        The data includes, in order: singular values, amplification factors, eigenvalues, DMD energies, future projections of the mode residual norms
+
+        The model is trained on 9 modes, so we only keep 9 elements of each of these vectors
+        """
+        # Collecting the singular values for the ML model
+        singular_values = np.diag(self.Sr[:9])
+        amps = self.eigs[:9]
+        eigs = self.omega[:9]
+        energies = None
+        mode_residual_predictions = self.time_dynamics2[-1, :9]
+
+        # computing DMD mode energies
+        epsilon = np.linalg.inv(self.W) @ self.Sr @ self.Vr.conj
+        row_norms = np.linalg.norm(epsilon, axis=1)
+        energies = row_norms[:9]
+
+        self.dmd_dataset.concat((singular_values, amps, eigs, energies, mode_residual_predictions)).tolist()
