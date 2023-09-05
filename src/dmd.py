@@ -205,9 +205,8 @@ class DMD:
         mode_residual_predictions = self.time_dynamics2[-1, :9]
 
         # computing DMD mode energies
-        print(f"W shape: {self.W.shape}, Sr shape: {self.Sr.shape}, Vr shape: {self.Vr.shape}")
         epsilon = np.linalg.inv(self.W) @ self.Sr @ self.Vr.conj().T
         row_norms = np.linalg.norm(epsilon, axis=1)
         energies = row_norms[:9]
 
-        self.dmd_dataset = np.concatenate((singular_values, amps, eigs, energies, mode_residual_predictions)).tolist()
+        self.dmd_dataset = np.concatenate((singular_values, amps, eigs, energies, mode_residual_predictions)).real.tolist()
