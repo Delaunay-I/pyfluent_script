@@ -364,7 +364,6 @@ DEFINE_EXECUTE_AT_END(write_slimSoln_par)
 #endif /* RP_HOST */
 #if !RP_NODE
     fclose(file);
-    Message("The solution was written to the file %s.\n", filename);
 #endif
 }
 
