@@ -4,14 +4,13 @@
 
 #include "udf.h"
 #define _CRT_SECURE_NO_WARNINGS
-// #define TURB
+#define TURB
 
 DEFINE_ON_DEMAND(apply_man_update)
 {
     Domain *d = Get_Domain(1);
     Thread *t;
     cell_t c;
-    real pos[ND_ND];
 
     const char* filename = "solver_data/DMDUpdate.csv";
 
@@ -40,8 +39,6 @@ DEFINE_ON_DEMAND(apply_man_update)
             fscanf(file, "\t%lf\t%lf", &k, &omega);
             #endif
             fscanf(file, "\n");
-
-            C_CENTROID(pos, c, t);
 
             C_P(c, t) += p;
             C_U(c, t) += u;
