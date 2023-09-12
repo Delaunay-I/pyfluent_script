@@ -45,6 +45,8 @@ class DMD:
         self.eigs = None
         self.W = None
 
+        self.b = None
+
         self.Phi = None
         self.omega = None
         self.time_dynamics = None
@@ -129,18 +131,18 @@ class DMD:
         # Doing least-squares to find initial solution
         x1 = self.data[:, 0]
         b, res, rnk, singularvalues = np.linalg.lstsq(self.Phi, x1, rcond=None)
-        b = b.T # shape: (r,)
+        self.b = b.T # shape: (r,)
 
         self.time_dynamics = np.empty((len(t), self.r))
         for iter in range(0, len(t)):
-            self.time_dynamics[iter, :] = np.real(b*np.exp(self.omega*t[iter]))
+            self.time_dynamics[iter, :] = np.real(self.b*np.exp(self.omega*t[iter]))
 
         # You can play with this variable (time_multiplier) to predict further in the future
         time_multiplier = 20
         t2 = np.arange(0, time_multiplier*end_time, dt)
         self.time_dynamics2 = np.empty((len(t2), self.r))
         for iter in range(0, len(t2)):
-            self.time_dynamics2[iter, :] = np.real(b*np.exp(self.omega*t2[iter]))
+            self.time_dynamics2[iter, :] = np.real(self.b*np.exp(self.omega*t2[iter]))
 
         sOutputName = 'time_dynamics.csv'
         sOutputName = os.path.join(output_directory, sOutputName)
@@ -202,7 +204,7 @@ class DMD:
         amps = self.eigs[:9]
         eigs = self.omega[:9]
         energies = None
-        mode_residual_predictions = np.abs(self.time_dynamics2[100, :9])
+        mode_residual_predictions = abs(self.b*np.exp(self.omega*20))[:9]
 
         # computing DMD mode energies
         epsilon = np.linalg.inv(self.W) @ self.Sr @ self.Vr.conj().T
