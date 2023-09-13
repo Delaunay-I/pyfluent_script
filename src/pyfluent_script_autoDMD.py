@@ -10,7 +10,9 @@ import pandas as pd
 import os
 
 from dmd import DMD
+from functions import TimeAdvance
 from config_parser import get_configuration
+from ml.MLmodel import ML_proba
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 NUM_SNAPS, NUM_DMD_MODES, ITER_NUM, DMD_ITER, NUM_VARS, case_file_path, outfName = get_configuration()
@@ -20,7 +22,9 @@ assert min(DMD_ITER) > NUM_SNAPS, "number of iterations is smaller than number o
 FLAG_DMD = False
 CALC_MODES = True
 APPLY_DMD = True
-
+F_AUTO_DMD = False
+ML_Proba_thresh = 0.7
+SLOPE_TOL = 1e-4
 
 # =======================
 # Problem Setup
@@ -54,10 +58,16 @@ tui.solve.monitors.residual.n_display(ITER_NUM)
 
 # Initialize the snapshots matrix
 data = None
+# all_s = []
 solver.solution.initialization.hybrid_initialize()
 res_norm = []
 
+# timeAdvance_tools= TimeAdvance(iResWinSize=100, iDummyDMDIter=10)
+# previous_dmdUpdate_iter = ITER_NUM*2
+slope_ratio=0
 for iter in range(1, ITER_NUM+1):
+    # res_avg, slope_ratio = timeAdvance_tools.solve_steps(solver, num_iters=1000)
+    # res_norm.append(res_avg)
     solver.solution.run_calculation.iterate(iter_count=1500)
 
 
@@ -77,24 +87,52 @@ for iter in range(1, ITER_NUM+1):
             if data.shape[1] > NUM_SNAPS:
                 data = data[:, -NUM_SNAPS:]
 
-    if FLAG_DMD and (iter in DMD_ITER):
+    if FLAG_DMD and ((iter in DMD_ITER) or (abs(slope_ratio - 1) <= SLOPE_TOL and F_AUTO_DMD)):
+    # if iter > NUM_SNAPS:
         my_dmd = DMD(data, NUM_VARS, NUM_DMD_MODES, verbose=2)
         my_dmd.calc_DMD()
 
         if CALC_MODES:
             my_dmd.calc_DMD_modes(DT)
             my_dmd.write_modes_to_file()
+            # tui.define.user_defined.execute_on_demand('"write_slimUpdate_onDemand::libudf"')
             # tui.define.user_defined.execute_on_demand('"set_Field_udms::libudf"')
             # tui.define.user_defined.execute_on_demand('"calc_Grads::libudf"')
 
+            # sVals = np.diag(my_dmd.Sr)
+            # all_s.append(sVals/sVals[0])
 
         # the ML automation pipelien is only applicable when we have 9 modes
-        if APPLY_DMD:
-            tui.define.user_defined.execute_on_demand('"apply_update_par::libudf"')
-            
+        if APPLY_DMD and (not F_AUTO_DMD or my_dmd.r >= 9):
+            # my_dmd.collect_ML_data()
+            # effectiveness_proba = ML_proba(my_dmd.dmd_dataset)
+            effectiveness_proba = 1000
+
+            if (effectiveness_proba > ML_Proba_thresh):
+                print(f"\033[32mProbability of the DMD update to be effective: {effectiveness_proba:.3f}\033[0m")
+
+                tui.define.user_defined.execute_on_demand('"apply_update_par::libudf"')
+                if F_AUTO_DMD:
+                    previous_dmdUpdate_iter = iter
+                    print("\n------Temporarily deactivating DMD...------\n")
+                    FLAG_DMD = False
+            else:
+                print(f"\033[33mProbability of the DMD update to be effective: {effectiveness_proba:.3f}\033[0m")
+
+
+    # mandating the solver to waint at least for NUM_SNAPS iterations, before applying another DMD update (for the auto DMD module)
+    if iter > previous_dmdUpdate_iter + NUM_SNAPS and F_AUTO_DMD and not FLAG_DMD:
+        print("\n------Re-activating DMD!!------\n")
+        FLAG_DMD = True
+
+
 
 residual_norm = np.array(res_norm)
 np.savetxt('residual_avg.plt', residual_norm)
+
+
+# all_s = np.array(all_s)
+# np.savetxt(outfName + '_singularvalues_s' + str(NUM_SNAPS) +'_m' + str(NUM_DMD_MODES) +  '.csv', all_s)
 
 # ===================
 # Visualization Part
