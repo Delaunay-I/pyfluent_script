@@ -8,108 +8,6 @@
 // #define TURB
 # define FLUID_ID 6
 
-static int iter_num = 1;
-
-
-DEFINE_ON_DEMAND(write_slimSoln_onDemand)
-{
-    const char* filename = "solver_data/solution_slim.csv";
-    Thread *t;
-    cell_t c;
-    Domain *d = Get_Domain(1);
-
-    FILE *file = fopen(filename, "w");
-
-    if (file == NULL) {
-        Message("\n Error: No write access to file %s. Abort UDF execution.\n", filename);
-        perror("fopen");
-        return 1;
-    }
-
-    thread_loop_c(t, d)
-    {
-        begin_c_loop(c, t)
-        {
-            #if RP_2D
-            fprintf(file, "%.16Le\t%.16Le\t%.16Le", C_P(c, t), C_U(c, t), C_V(c, t));
-            #endif
-            #if RP_3D
-            fprintf(file, "%.16Le\t%.16Le\t%.16Le\t%.16Le", C_P(c, t), C_U(c, t), C_V(c, t), C_W(c, t));
-            #endif
-            #ifdef TURB
-            fprintf(file, "\t%.16Le\t%.16Le", C_K(c,t), C_O(c,t));
-            #endif
-
-            fprintf(file, "\n");
-        }
-        end_c_loop(c, t);
-    }
-    fclose(file);
-    Message0("The solution was written to the file %s.\n", filename);
-}
-
-
-
-DEFINE_EXECUTE_AT_END(write_step_numbered)
-{
-    Thread *t; // Pointer to the current thread
-    Domain *d = Get_Domain(1);
-    cell_t c; // Cell iterator
-
-    int n_iter = iter_num++;
-    char file_number_str[32];
-    snprintf(file_number_str, sizeof(file_number_str), "%d", n_iter);
-    const char* base_path = "solver_data/solution_data-";
-    const char* extension = ".dat";
-
-    // Calculate the total length of the file path (including null-terminator)
-    size_t path_length = strlen(base_path) + strlen(file_number_str) + strlen(extension) + 1;
-
-    // Allocate memory for the file_path dynamically
-    char* file_path = (char*)malloc(path_length);
-       if (file_path == NULL) {
-        printf("Memory allocation error.\n");
-        return 1;
-    }
-
-    // Combine the base path and extension into file_path
-    snprintf(file_path, path_length, "%s%d%s", base_path, n_iter, extension);
-
-    FILE* file = fopen(file_path, "w");
-
-      if (file == NULL) { // check for errors
-        Message("\n Error: No write access to file %s. Abort UDF execution.\n", file_path);
-        free(file_path); // Don't forget to free the allocated memory
-        perror("fopen");
-        return 1;
-    }
-
-
-    // Loop over all cell threads in the domain
-    thread_loop_c(t, d)
-    {
-        // Loop over all cells in the current thread
-        begin_c_loop(c, t)
-        {
-            // Get the coordinates of the cell centroid
-            #if RP_2D
-            fprintf(file, "%.16Le\t%.16Le\t%.16Le", C_P(c, t), C_U(c, t), C_V(c, t));
-            #endif
-            #if RP_3D
-            fprintf(file, "%.16Le\t%.16Le\t%.16Le\t%.16Le", C_P(c, t), C_U(c, t), C_V(c, t), C_W(c, t));
-            #endif
-            #ifdef TURB
-            fprintf(file, "\t%.16Le\t%.16Le", C_K(c,t), C_O(c,t));
-            #endif
-            fprintf(file, "\n");
-        }
-        end_c_loop(c, t)
-    }
-
-    fclose(file);
-    free(file_path);
-}
-
 DEFINE_EXECUTE_AT_END(write_slimSoln_par)
 {
 #if !RP_HOST
@@ -305,6 +203,44 @@ DEFINE_EXECUTE_AT_END(write_slimSoln_par)
 }
 
 
+DEFINE_ON_DEMAND(write_slimSoln_onDemand)
+{
+    const char* filename = "solver_data/solution_slim.csv";
+    Thread *t;
+    cell_t c;
+    Domain *d = Get_Domain(1);
+
+    FILE *file = fopen(filename, "w");
+
+    if (file == NULL) {
+        Message("\n Error: No write access to file %s. Abort UDF execution.\n", filename);
+        perror("fopen");
+        return 1;
+    }
+
+    thread_loop_c(t, d)
+    {
+        begin_c_loop(c, t)
+        {
+            #if RP_2D
+            fprintf(file, "%.16Le\t%.16Le\t%.16Le", C_P(c, t), C_U(c, t), C_V(c, t));
+            #endif
+            #if RP_3D
+            fprintf(file, "%.16Le\t%.16Le\t%.16Le\t%.16Le", C_P(c, t), C_U(c, t), C_V(c, t), C_W(c, t));
+            #endif
+            #ifdef TURB
+            fprintf(file, "\t%.16Le\t%.16Le", C_K(c,t), C_O(c,t));
+            #endif
+
+            fprintf(file, "\n");
+        }
+        end_c_loop(c, t);
+    }
+    fclose(file);
+    Message0("The solution was written to the file %s.\n", filename);
+}
+
+
 /******************************************************************************************/
 // DEFINE_EXECUTE_AT_END(write_step)
 // {
@@ -362,6 +298,70 @@ DEFINE_EXECUTE_AT_END(write_slimSoln_par)
 //     }
 //     fclose(file);
 // }
+
+
+/******************************************************************************************/
+//static int iter_num = 1;
+// DEFINE_EXECUTE_AT_END(write_step_numbered)
+// {
+//     Thread *t; // Pointer to the current thread
+//     Domain *d = Get_Domain(1);
+//     cell_t c; // Cell iterator
+
+//     int n_iter = iter_num++;
+//     char file_number_str[32];
+//     snprintf(file_number_str, sizeof(file_number_str), "%d", n_iter);
+//     const char* base_path = "solver_data/solution_data-";
+//     const char* extension = ".dat";
+
+//     // Calculate the total length of the file path (including null-terminator)
+//     size_t path_length = strlen(base_path) + strlen(file_number_str) + strlen(extension) + 1;
+
+//     // Allocate memory for the file_path dynamically
+//     char* file_path = (char*)malloc(path_length);
+//        if (file_path == NULL) {
+//         printf("Memory allocation error.\n");
+//         return 1;
+//     }
+
+//     // Combine the base path and extension into file_path
+//     snprintf(file_path, path_length, "%s%d%s", base_path, n_iter, extension);
+
+//     FILE* file = fopen(file_path, "w");
+
+//       if (file == NULL) { // check for errors
+//         Message("\n Error: No write access to file %s. Abort UDF execution.\n", file_path);
+//         free(file_path); // Don't forget to free the allocated memory
+//         perror("fopen");
+//         return 1;
+//     }
+
+
+//     // Loop over all cell threads in the domain
+//     thread_loop_c(t, d)
+//     {
+//         // Loop over all cells in the current thread
+//         begin_c_loop(c, t)
+//         {
+//             // Get the coordinates of the cell centroid
+//             #if RP_2D
+//             fprintf(file, "%.16Le\t%.16Le\t%.16Le", C_P(c, t), C_U(c, t), C_V(c, t));
+//             #endif
+//             #if RP_3D
+//             fprintf(file, "%.16Le\t%.16Le\t%.16Le\t%.16Le", C_P(c, t), C_U(c, t), C_V(c, t), C_W(c, t));
+//             #endif
+//             #ifdef TURB
+//             fprintf(file, "\t%.16Le\t%.16Le", C_K(c,t), C_O(c,t));
+//             #endif
+//             fprintf(file, "\n");
+//         }
+//         end_c_loop(c, t)
+//     }
+
+//     fclose(file);
+//     free(file_path);
+// }
+
 
 /******************************************************************************************/
 // DEFINE_ON_DEMAND(write_HDF5)
