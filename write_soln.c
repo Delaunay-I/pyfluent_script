@@ -5,8 +5,9 @@
 #include "udf.h"
 
 #define _CRT_SECURE_NO_WARNINGS
-// #define TURB
-# define FLUID_ID 6
+#define TURB
+# define FLUID_ID 109
+static int iter_num = 1;
 
 DEFINE_EXECUTE_AT_END(write_slimSoln_par)
 {
@@ -15,9 +16,10 @@ DEFINE_EXECUTE_AT_END(write_slimSoln_par)
     Thread *t;
     cell_t c;
     t = Lookup_Thread(d, FLUID_ID);
-#endif
-#if !RP_NODE
-    const char *filename = "solver_data/solution_slim.csv";
+
+    char filename[100];
+    sprintf(filename, "solver_data/soln_%d.csv", myid);
+
     FILE *file = fopen(filename, "w");
     if (file == NULL)
     {
@@ -27,181 +29,22 @@ DEFINE_EXECUTE_AT_END(write_slimSoln_par)
     }
 #endif
 
-    int size; /* data passing variables */
-    real *CP, *CU, *CV;
-    #if RP_3D
-    real *CW;
-    #endif
-    #ifdef TURB
-    real *ck, *co;
-    #endif
-    int pe;
-
-    /* UDF Now does 2 different things depending on NODE or HOST */
-#if RP_NODE /* Each Node loads up its data passing array */
-    size = THREAD_N_ELEMENTS_INT(t);
-    
-    CP = (real *)malloc(size * sizeof(real));
-    CU = (real *)malloc(size * sizeof(real));
-    CV = (real *)malloc(size * sizeof(real));
-#if RP_3D
-    CW = (real *)malloc(size * sizeof(real));
-#endif
-#ifdef TURB
-    ck = (real *)malloc(size * sizeof(real));
-    co = (real *)malloc(size * sizeof(real));
-#endif
+#if RP_NODE 
 
     begin_c_loop_int(c, t)
-        CP[c] = C_P(c, t);
-        CU[c] = C_U(c, t);
-        CV[c] = C_V(c, t);
-        #if RP_3D
-        CW[c] = C_W(c, t);
-        #endif
-        #ifdef TURB
-        ck[c] = C_K(c, t);
-        co[c] = C_O(c, t);
-        #endif
-    end_c_loop_int(c, t)
-
-        pe = (I_AM_NODE_ZERO_P) ? node_host : node_zero;
-        PRF_CSEND_INT(pe, &size, 1, myid);
-        PRF_CSEND_REAL(pe, CP, size, myid);
-        PRF_CSEND_REAL(pe, CU, size, myid);
-        PRF_CSEND_REAL(pe, CV, size, myid);
-#if RP_3D
-        PRF_CSEND_REAL(pe, CW, size, myid);
-#endif
-#ifdef TURB
-        PRF_CSEND_REAL(pe, ck, size, myid);
-        PRF_CSEND_REAL(pe, co, size, myid);
-#endif
-        free(CP);
-        free(CU);
-        free(CV);
-#if RP_3D
-        free(CW);
-#endif
-#ifdef TURB
-        free(ck);
-        free(co);
-#endif
-        /* node_0 now collect data sent by other compute nodes */
-        /*  and sends it straight on to the host */
-        if (I_AM_NODE_ZERO_P)
-        compute_node_loop_not_zero(pe)
-        {
-            PRF_CRECV_INT(pe, &size, 1, pe);
-
-//Allocating data
-            CP = (real *)malloc(size * sizeof(real));
-            CU = (real *)malloc(size * sizeof(real));
-            CV = (real *)malloc(size * sizeof(real));
-#if RP_3D
-            CW = (real *)malloc(size * sizeof(real));
-#endif
-#ifdef TURB
-            ck = (real *)malloc(size * sizeof(real));
-            co = (real *)malloc(size * sizeof(real));
-#endif
-
-            // Receiving data
-            PRF_CRECV_REAL(pe, CP, size, pe);
-            PRF_CRECV_REAL(pe, CU, size, pe);
-            PRF_CRECV_REAL(pe, CV, size, pe);
-#if RP_3D
-            PRF_CRECV_REAL(pe, CW, size, pe);
-#endif
-#ifdef TURB
-            PRF_CRECV_REAL(pe, ck, size, pe);
-            PRF_CRECV_REAL(pe, co, size, pe);
-#endif
-
-            // Sending to host node
-            PRF_CSEND_INT(node_host, &size, 1, myid);
-
-            PRF_CSEND_REAL(node_host, CP, size, myid);
-            PRF_CSEND_REAL(node_host, CU, size, myid);
-            PRF_CSEND_REAL(node_host, CV, size, myid);
-#if RP_3D
-            PRF_CSEND_REAL(node_host, CW, size, myid);
-#endif
-#ifdef TURB
-            PRF_CSEND_REAL(node_host, ck, size, myid);
-            PRF_CSEND_REAL(node_host, co, size, myid);
-#endif
-
-            free((char *)CP);
-            free((char *)CU);
-            free((char *)CV);
-#if RP_3D
-            free((char *)CW);
-#endif
-#ifdef TURB
-            free((char *)ck);
-            free((char *)co);
-#endif
-        }
-
-#endif /* RP_NODE */
-#if RP_HOST
-    compute_node_loop(pe) /* only acts as a counter in this loop */
-    {
-        /* Receive data sent by each node and write it out to the file */
-        PRF_CRECV_INT(node_zero, &size, 1, node_zero);
-        //Allocating data
-        CP = (real *)malloc(size * sizeof(real));
-        CU = (real *)malloc(size * sizeof(real));
-        CV = (real *)malloc(size * sizeof(real));
-#if RP_3D
-        CW = (real *)malloc(size * sizeof(real));
-#endif
-#ifdef TURB
-        ck = (real *)malloc(size * sizeof(real));
-        co = (real *)malloc(size * sizeof(real));
-#endif
-        // Receiving data from node-0
-        PRF_CRECV_REAL(node_zero, CP, size, node_zero);
-        PRF_CRECV_REAL(node_zero, CU, size, node_zero);
-        PRF_CRECV_REAL(node_zero, CV, size, node_zero);
-#if RP_3D
-        PRF_CRECV_REAL(node_zero, CW, size, node_zero);
-#endif
-#ifdef TURB
-        PRF_CRECV_REAL(node_zero, ck, size, node_zero);
-        PRF_CRECV_REAL(node_zero, co, size, node_zero);
-#endif
-
-        for (int i = 0; i < size; i++){
-            fprintf(file, "%.16Le\t%.16Le\t%.16Le", CP[i], CU[i], CV[i]);
+        fprintf(file, "%.16Le\t%.16Le\t%.16Le", C_P(c, t), C_U(c, t), C_V(c, t));
             #if RP_3D
-            fprintf(file, "\t%.16Le", CW[i]);
+            fprintf(file, "\t%.16Le", C_W(c, t));
             #endif
             #ifdef TURB
-            fprintf(file, "\t%.16Le\t%.16Le", ck[i], co[i]);
+            fprintf(file, "\t%.16Le\t%.16Le", C_K(c, t), C_O(c, t));
             #endif
             fprintf(file, "\n");
-        }
-            
+    end_c_loop_int(c, t)
 
-        free(CP);
-        free(CU);
-        free(CV);
-#if RP_3D
-        free(CW);
-#endif
-#ifdef TURB
-        free(ck);
-        free(co);
-#endif
-    }
-#endif /* RP_HOST */
-#if !RP_NODE
-    fclose(file);
-#endif
+fclose(file);
+#endif /* RP_NODE */
 }
-
 
 DEFINE_ON_DEMAND(write_slimSoln_onDemand)
 {
@@ -242,66 +85,65 @@ DEFINE_ON_DEMAND(write_slimSoln_onDemand)
 
 
 /******************************************************************************************/
-// DEFINE_EXECUTE_AT_END(write_step)
-// {
-//     Thread *t; // Pointer to the current thread
-//     Domain *d = Get_Domain(1);
-//     cell_t c; // Cell iterator
+DEFINE_EXECUTE_AT_END(write_step)
+{
+    Thread *t; // Pointer to the current thread
+    Domain *d = Get_Domain(1);
+    cell_t c; // Cell iterator
 
-//     const char* filename = "solver_data/solution.csv";
+    const char* filename = "solver_data/solution.csv";
 
-//     FILE* file = fopen(filename, "w");
+    FILE* file = fopen(filename, "w");
 
-//     if (file == NULL) { // check for errors
-//         Message("\n Error: No write access to file %s. Abort UDF execution.\n", filename);
-//         perror("fopen");
-//         return 1;
-//     }
+    if (file == NULL) { // check for errors
+        Message("\n Error: No write access to file %s. Abort UDF execution.\n", filename);
+        perror("fopen");
+        return 1;
+    }
 
-//     fprintf(file, "iter:%5d\n", iter_num++);
-//     #if RP_2D
-//     fprintf(file, "id\tthread_id\tp\tu\tv");
-//     #endif
-//     #if RP_3D
-//     fprintf(file, "id\tthread_id\tp\tu\tv\tw");
-//     #endif
-//     #ifdef TURB
-//     fprintf(file, "\tk\tomega");
-//     #endif
-//     fprintf(file, "\n");
+    fprintf(file, "iter:%5d\n", iter_num++);
+    #if RP_2D
+    fprintf(file, "id\tthread_id\tp\tu\tv");
+    #endif
+    #if RP_3D
+    fprintf(file, "id\tthread_id\tp\tu\tv\tw");
+    #endif
+    #ifdef TURB
+    fprintf(file, "\tk\tomega");
+    #endif
+    fprintf(file, "\n");
 
-//     int zone_id = -1;
-//     // Loop over all cell threads in the domain
-//     thread_loop_c(t, d)
-//     {
-//         zone_id = THREAD_ID(t);
-//         // Loop over all cells in the current thread
-//         begin_c_loop(c, t)
-//         {
-//             #if RP_2D
-//             fprintf(file, "%6d\t%3d\t%.16Le\t%.16Le\t%.16Le",
-//             c, zone_id,
-//             C_P(c,t), C_U(c, t), C_V(c, t));
-//             #endif
-//             #if RP_3D
-//             fprintf(file, "%6d\t%3d\t%.16Le\t%.16Le\t%.16Le\t%.16Le",
-//             c, zone_id,
-//             C_P(c,t), C_U(c, t), C_V(c, t), C_W(c, t));
-//             #endif
-//             #ifdef TURB
-//             fprintf(file, "\t%.16Le\t%.16Le", C_K(c,t), C_O(c,t));
-//             #endif
+    int zone_id = -1;
+    // Loop over all cell threads in the domain
+    thread_loop_c(t, d)
+    {
+        zone_id = THREAD_ID(t);
+        // Loop over all cells in the current thread
+        begin_c_loop(c, t)
+        {
+            #if RP_2D
+            fprintf(file, "%6d\t%3d\t%.16Le\t%.16Le\t%.16Le",
+            c, zone_id,
+            C_P(c,t), C_U(c, t), C_V(c, t));
+            #endif
+            #if RP_3D
+            fprintf(file, "%6d\t%3d\t%.16Le\t%.16Le\t%.16Le\t%.16Le",
+            c, zone_id,
+            C_P(c,t), C_U(c, t), C_V(c, t), C_W(c, t));
+            #endif
+            #ifdef TURB
+            fprintf(file, "\t%.16Le\t%.16Le", C_K(c,t), C_O(c,t));
+            #endif
 
-//             fprintf(file, "\n");
-//         }
-//         end_c_loop(c, t)
-//     }
-//     fclose(file);
-// }
+            fprintf(file, "\n");
+        }
+        end_c_loop(c, t)
+    }
+    fclose(file);
+}
 
 
 /******************************************************************************************/
-//static int iter_num = 1;
 // DEFINE_EXECUTE_AT_END(write_step_numbered)
 // {
 //     Thread *t; // Pointer to the current thread
