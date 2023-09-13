@@ -29,7 +29,7 @@ SLOPE_TOL = 1e-4
 # =======================
 # Problem Setup
 # =======================
-solver = launch_fluent(version="2d", precision="double", processor_count=6, mode="solver")
+solver = launch_fluent(version="2d", precision="double", processor_count=1, mode="solver")
 
 tui = solver.tui
 # Read the mesh file and set the configuration
@@ -44,7 +44,7 @@ tui.define.user_defined.user_defined_memory(NUM_VARS + 3)
 tui.define.user_defined.auto_compile_compiled_udfs("no")
 tui.define.user_defined.compiled_functions("compile", "libudf", "y", "write_soln.c", "apply_update.c", "set_udms.c")
 tui.define.user_defined.compiled_functions("load", 'libudf')
-tui.define.user_defined.function_hooks("execute-at-end", '"write_slimSoln_par_optimized::libudf"')
+tui.define.user_defined.function_hooks("execute-at-end", '"write_step::libudf"')
 
 
 tui.solve.monitors.residual.normalize('yes')
@@ -109,7 +109,7 @@ for iter in range(1, ITER_NUM+1):
             if (effectiveness_proba > ML_Proba_thresh):
                 print(f"\033[32mProbability of the DMD update to be effective: {effectiveness_proba:.3f}\033[0m")
 
-                tui.define.user_defined.execute_on_demand('"apply_update_par::libudf"')
+                tui.define.user_defined.execute_on_demand('"apply_update::libudf"')
                 if F_AUTO_DMD:
                     previous_dmdUpdate_iter = iter
                     print("\n------Temporarily deactivating DMD...------\n")
