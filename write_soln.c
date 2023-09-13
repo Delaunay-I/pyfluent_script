@@ -10,66 +10,6 @@
 
 static int iter_num = 1;
 
-DEFINE_EXECUTE_AT_END(write_step)
-{
-    Thread *t; // Pointer to the current thread
-    Domain *d = Get_Domain(1);
-    cell_t c; // Cell iterator
-    real x[ND_ND]; // Array to store the coordinates of the cell centroid
-
-    const char* filename = "solver_data/solution.csv";
-
-    FILE* file = fopen(filename, "w");
-
-    if (file == NULL) { // check for errors
-        Message("\n Error: No write access to file %s. Abort UDF execution.\n", filename);
-        perror("fopen");
-        return 1;
-    }
-
-    fprintf(file, "iter:%5d\n", iter_num++);
-    #if RP_2D
-    fprintf(file, "id\tthread_id\tp\tu\tv");
-    #endif
-    #if RP_3D
-    fprintf(file, "id\tthread_id\tp\tu\tv\tw");
-    #endif
-    #ifdef TURB
-    fprintf(file, "\tk\tomega");
-    #endif
-    fprintf(file, "\n");
-
-    int zone_id = -1;
-    // Loop over all cell threads in the domain
-    thread_loop_c(t, d)
-    {
-        zone_id = THREAD_ID(t);
-        // Loop over all cells in the current thread
-        begin_c_loop(c, t)
-        {
-            // Get the coordinates of the cell centroid
-            C_CENTROID(x, c, t);
-            #if RP_2D
-            fprintf(file, "%6d\t%3d\t%.16Le\t%.16Le\t%.16Le",
-            c, zone_id,
-            C_P(c,t), C_U(c, t), C_V(c, t));
-            #endif
-            #if RP_3D
-            fprintf(file, "%6d\t%3d\t%.16Le\t%.16Le\t%.16Le\t%.16Le",
-            c, zone_id,
-            C_P(c,t), C_U(c, t), C_V(c, t), C_W(c, t));
-            #endif
-            #ifdef TURB
-            fprintf(file, "\t%.16Le\t%.16Le", C_K(c,t), C_O(c,t));
-            #endif
-
-            fprintf(file, "\n");
-        }
-        end_c_loop(c, t)
-    }
-    fclose(file);
-}
-
 
 DEFINE_ON_DEMAND(write_slimSoln_onDemand)
 {
@@ -161,7 +101,6 @@ DEFINE_EXECUTE_AT_END(write_step_numbered)
             #ifdef TURB
             fprintf(file, "\t%.16Le\t%.16Le", C_K(c,t), C_O(c,t));
             #endif
-
             fprintf(file, "\n");
         }
         end_c_loop(c, t)
@@ -169,12 +108,10 @@ DEFINE_EXECUTE_AT_END(write_step_numbered)
 
     fclose(file);
     free(file_path);
-
 }
 
 DEFINE_EXECUTE_AT_END(write_slimSoln_par)
 {
-    
 #if !RP_HOST
     Domain *d = Get_Domain(1);
     Thread *t;
@@ -205,7 +142,7 @@ DEFINE_EXECUTE_AT_END(write_slimSoln_par)
     /* UDF Now does 2 different things depending on NODE or HOST */
 #if RP_NODE /* Each Node loads up its data passing array */
     size = THREAD_N_ELEMENTS_INT(t);
-
+    
     CP = (real *)malloc(size * sizeof(real));
     CU = (real *)malloc(size * sizeof(real));
     CV = (real *)malloc(size * sizeof(real));
@@ -367,6 +304,66 @@ DEFINE_EXECUTE_AT_END(write_slimSoln_par)
 #endif
 }
 
+
+/******************************************************************************************/
+// DEFINE_EXECUTE_AT_END(write_step)
+// {
+//     Thread *t; // Pointer to the current thread
+//     Domain *d = Get_Domain(1);
+//     cell_t c; // Cell iterator
+
+//     const char* filename = "solver_data/solution.csv";
+
+//     FILE* file = fopen(filename, "w");
+
+//     if (file == NULL) { // check for errors
+//         Message("\n Error: No write access to file %s. Abort UDF execution.\n", filename);
+//         perror("fopen");
+//         return 1;
+//     }
+
+//     fprintf(file, "iter:%5d\n", iter_num++);
+//     #if RP_2D
+//     fprintf(file, "id\tthread_id\tp\tu\tv");
+//     #endif
+//     #if RP_3D
+//     fprintf(file, "id\tthread_id\tp\tu\tv\tw");
+//     #endif
+//     #ifdef TURB
+//     fprintf(file, "\tk\tomega");
+//     #endif
+//     fprintf(file, "\n");
+
+//     int zone_id = -1;
+//     // Loop over all cell threads in the domain
+//     thread_loop_c(t, d)
+//     {
+//         zone_id = THREAD_ID(t);
+//         // Loop over all cells in the current thread
+//         begin_c_loop(c, t)
+//         {
+//             #if RP_2D
+//             fprintf(file, "%6d\t%3d\t%.16Le\t%.16Le\t%.16Le",
+//             c, zone_id,
+//             C_P(c,t), C_U(c, t), C_V(c, t));
+//             #endif
+//             #if RP_3D
+//             fprintf(file, "%6d\t%3d\t%.16Le\t%.16Le\t%.16Le\t%.16Le",
+//             c, zone_id,
+//             C_P(c,t), C_U(c, t), C_V(c, t), C_W(c, t));
+//             #endif
+//             #ifdef TURB
+//             fprintf(file, "\t%.16Le\t%.16Le", C_K(c,t), C_O(c,t));
+//             #endif
+
+//             fprintf(file, "\n");
+//         }
+//         end_c_loop(c, t)
+//     }
+//     fclose(file);
+// }
+
+/******************************************************************************************/
 // DEFINE_ON_DEMAND(write_HDF5)
 // {
 //     const char* filename = "solver_data/solution_slim.h5";
@@ -421,7 +418,7 @@ DEFINE_EXECUTE_AT_END(write_slimSoln_par)
 //     Message0("The solution was written to the file %s.\n", filename);
 // }
 
-
+/******************************************************************************************/
 // DEFINE_EXECUTE_AT_END(write_step_vec)
 // {
 //     Thread *t;
