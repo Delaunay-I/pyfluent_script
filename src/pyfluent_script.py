@@ -19,13 +19,17 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 NUM_SNAPS, NUM_DMD_MODES, ITER_NUM, PRE_ITER_NUM, DMD_ITER, NUM_VARS, case_file_path, outfName = get_configuration()
 
 DT = 1
-assert min(DMD_ITER) > NUM_SNAPS, "number of iterations is smaller than number of snapshots"
+assert min(DMD_ITER) > NUM_SNAPS, """\033[91m
+number of iterations is smaller than number of snapshots
+\033[0m"""
 FLAG_DMD = True
 CALC_MODES = True
 APPLY_DMD = True
 
 if FLAG_DMD:
-    assert DMD_ITER[0] - PRE_ITER_NUM > NUM_SNAPS, "Decrease the number of Pre-iterations to collect the necessary snapshots from the solver"
+    assert DMD_ITER[0] - PRE_ITER_NUM > NUM_SNAPS, """\033[91m
+Decrease the number of Pre-iterations to collect the necessary snapshots from the solver.
+    \033[0m"""
 
 # =======================
 # Problem Setup
