@@ -2,8 +2,9 @@
 
 -nvars 3
 
--nSnapshots 100
--nDMDmodes 50
+-nSnapshots 20
+-nDMDmodes 15
 
+-preIters 900
 -nIter 1500
--dmd_iters 550
+-dmd_iters 30 1200

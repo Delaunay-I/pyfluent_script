@@ -16,13 +16,16 @@ import time
 
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
-NUM_SNAPS, NUM_DMD_MODES, ITER_NUM, DMD_ITER, NUM_VARS, case_file_path, outfName = get_configuration()
+NUM_SNAPS, NUM_DMD_MODES, ITER_NUM, PRE_ITER_NUM, DMD_ITER, NUM_VARS, case_file_path, outfName = get_configuration()
 
 DT = 1
 assert min(DMD_ITER) > NUM_SNAPS, "number of iterations is smaller than number of snapshots"
 FLAG_DMD = True
 CALC_MODES = True
 APPLY_DMD = True
+
+if FLAG_DMD:
+    assert DMD_ITER[0] - PRE_ITER_NUM > NUM_SNAPS, "Decrease the number of Pre-iterations to collect the necessary snapshots from the solver"
 
 # =======================
 # Problem Setup
@@ -42,7 +45,6 @@ tui.define.user_defined.user_defined_memory(NUM_VARS + 3)
 tui.define.user_defined.auto_compile_compiled_udfs("no")
 tui.define.user_defined.compiled_functions("compile", "libudf", "y", "write_soln.c", "apply_update.c", "set_udms.c")
 tui.define.user_defined.compiled_functions("load", 'libudf')
-tui.define.user_defined.function_hooks("execute-at-end", '"write_slimSoln_par::libudf"')
 
 
 tui.solve.monitors.residual.normalize('yes')
@@ -57,11 +59,14 @@ tui.solve.monitors.residual.n_display(ITER_NUM)
 # Initialize the snapshots matrix
 data = None
 solver.solution.initialization.hybrid_initialize()
+solver.solution.run_calculation.iterate(iter_count=PRE_ITER_NUM)
 
+tui.define.user_defined.function_hooks("execute-at-end", '"write_slimSoln_par::libudf"')
 
 soln_file_path = os.path.normpath(os.path.join(script_dir, "..", "solver_data"))
 IO = file_IO(soln_file_path)
 res_norm = []
+
 
 for iter in range(1, ITER_NUM+1):
     start_time = time.time()
