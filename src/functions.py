@@ -142,3 +142,13 @@ class file_IO:
             self.first_call = False
 
         return dataset.to_numpy().flatten('F')[:, np.newaxis]
+    
+
+    def write_file(self, dataset):
+        last_idx = 0
+
+        for size, node in zip(self.partition_sizes, self.file_numbers):
+            tmp_data = dataset[last_idx : last_idx + size]
+            print(tmp_data.shape)
+            np.savetxt(self.fpath + f"/update_{node}.csv", tmp_data, delimiter='\t')
+            last_idx = last_idx + size

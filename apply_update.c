@@ -5,47 +5,30 @@
 #include "udf.h"
 
 // #define TURB
-# define FLUID_ID 6
+# define FLUID_ID 6 //109
+
 
 DEFINE_ON_DEMAND(apply_update_par)
 {
+#if !RP_HOST
     Domain *d = Get_Domain(1);
     Thread *t;
     cell_t c;
     t = Lookup_Thread(d, FLUID_ID);
-    const char *filename = "solver_data/DMDUpdate.csv";
 
-#if RP_NODE
-    FILE* file = fopen(filename, "r");
-    if (file == NULL){
-        Message("ERROR: cannot open the file %s. Abort UDF execution.\n", filename);
+    char filename[100];
+    sprintf(filename, "solver_data/update_%d.csv", myid);
+
+    FILE *file = fopen(filename, "w");
+    if (file == NULL)
+    {
+        Message("\n Error: No write access to file %s. Abort UDF execution.\n", filename);
         perror("fopen");
         return 1;
     }
+#endif
 
-    int size = THREAD_N_ELEMENTS_INT(t);
-
-    if(I_AM_NODE_ZERO_P)
-        PRF_CSEND_INT(myid + 1, &size, 1, myid);
-
-    // Skip lines for non_zero nodes
-    if (!I_AM_NODE_ZERO_P)
-    {
-        int linesToSkip;
-        PRF_CRECV_INT(myid - 1, &linesToSkip, 1, myid - 1);
-        // Skip lines
-        for (int i = 0; i < linesToSkip; i++)
-        {
-            char ch;
-            while ((ch = fgetc(file)) != '\n' && ch != EOF){}
-        }
-        
-        linesToSkip += size;
-        if (myid + 1 < compute_node_count)
-        {
-            PRF_CSEND_INT(myid + 1, &linesToSkip, 1, myid);
-        }
-    }
+#if RP_NODE 
 
 begin_c_loop_int(c, t)
         real p = 0, u = 0, v = 0;
@@ -75,9 +58,8 @@ begin_c_loop_int(c, t)
 end_c_loop_int(c, t)
 
 fclose(file);
-#endif
+#endif /* RP_NODE */
 }
-
 
 /******************************************************************************************/
 // ******************  Serial data write  *********************

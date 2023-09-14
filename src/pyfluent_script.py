@@ -95,6 +95,7 @@ for iter in range(1, ITER_NUM+1):
             # tui.define.user_defined.execute_on_demand('"set_Field_udms::libudf"')
 
         if APPLY_DMD:
+            IO.write_file(my_dmd.dmd_update_col)
             tui.define.user_defined.execute_on_demand('"apply_update_par::libudf"')
             
 
