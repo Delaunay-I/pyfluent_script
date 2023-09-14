@@ -71,8 +71,8 @@ soln_file_path = os.path.normpath(os.path.join(script_dir, "..", "solver_data"))
 IO = file_IO(soln_file_path)
 res_norm = []
 
-
-for iter in range(1, ITER_NUM+1):
+init_iter = PRE_ITER_NUM + 1
+for iter in range(init_iter, ITER_NUM+1):
     start_time = time.time()
     solver.solution.run_calculation.iterate(iter_count=1)
     end_time = time.time()
@@ -83,10 +83,10 @@ for iter in range(1, ITER_NUM+1):
         vSoln = IO.read_soln()
         print(vSoln.shape)
 
-        if iter == 1:
+        if iter == init_iter:
             vSoln_old = vSoln
 
-        elif iter > 1:        
+        elif iter > init_iter:        
             vSoln_update = vSoln - vSoln_old
             vSoln_old = vSoln
 
@@ -94,18 +94,18 @@ for iter in range(1, ITER_NUM+1):
             if data.shape[1] > NUM_SNAPS:
                 data = data[:, -NUM_SNAPS:]
 
-    if FLAG_DMD and (iter in DMD_ITER):
-        my_dmd = DMD(data, NUM_VARS, NUM_DMD_MODES, verbose=2)
-        my_dmd.calc_DMD()
+        if iter in DMD_ITER:
+            my_dmd = DMD(data, NUM_VARS, NUM_DMD_MODES, verbose=2)
+            my_dmd.calc_DMD()
 
-        if CALC_MODES:
-            my_dmd.calc_DMD_modes(DT)
-            my_dmd.write_modes_to_file()
-            # tui.define.user_defined.execute_on_demand('"set_Field_udms::libudf"')
+            if CALC_MODES:
+                my_dmd.calc_DMD_modes(DT)
+                my_dmd.write_modes_to_file()
+                # tui.define.user_defined.execute_on_demand('"set_Field_udms::libudf"')
 
-        if APPLY_DMD:
-            IO.write_file(my_dmd.dmd_update_col)
-            tui.define.user_defined.execute_on_demand('"apply_update_par::libudf"')
+            if APPLY_DMD:
+                IO.write_file(my_dmd.dmd_update_col)
+                tui.define.user_defined.execute_on_demand('"apply_update_par::libudf"')
             
 
 residual_norm = np.array(res_norm)
