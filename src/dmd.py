@@ -53,6 +53,7 @@ class DMD:
         self.time_dynamics2 = None
         self.Atilde = None
         self.dmd_update = None
+        self.dmd_update_col = None
 
         # Vector data for ML analysis
         self.dmd_dataset = np.array([])
@@ -97,8 +98,9 @@ class DMD:
 
 
         split_data = np.array_split(np.real(self.dmd_update), self.num_vars, axis=0)
-        data_mat = np.column_stack(split_data)
-        np.savetxt("solver_data/DMDUpdate.csv", data_mat, delimiter='\t', fmt='%s')
+        self.dmd_update_col = np.column_stack(split_data)
+        print(self.dmd_update_col.shape)
+        # np.savetxt("solver_data/DMDUpdate.csv", self.dmd_update_col, delimiter='\t', fmt='%s')
 
 
 
