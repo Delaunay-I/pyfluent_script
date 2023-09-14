@@ -146,14 +146,11 @@ class file_IO:
     def write_file(self, dataset):
         last_idx = 0
 
-        print(f""" partition sizes:{self.partition_sizes},
-              file numbers:{self.file_numbers}
-              """)
         for size, node in zip(self.partition_sizes, self.file_numbers):
             tmp_data = dataset[last_idx : last_idx + size]
 
             fName = self.fpath + f"/update_{node}.csv"
             np.savetxt(fName, tmp_data, delimiter='\t')
 
-            print(f"""Saved file {fName}, storing tmp_data with shape: {tmp_data.shape}""")
             last_idx = last_idx + size
+        return None
