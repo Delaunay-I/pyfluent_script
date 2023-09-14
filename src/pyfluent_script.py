@@ -96,16 +96,16 @@ for iter in range(init_iter, ITER_NUM+1):
 
         if iter in DMD_ITER:
             my_dmd = DMD(data, NUM_VARS, NUM_DMD_MODES, verbose=2)
-            my_dmd.calc_DMD()
+            status = my_dmd.calc_DMD()
+            if status != "RankZeroError":
+                if CALC_MODES:
+                    my_dmd.calc_DMD_modes(DT)
+                    my_dmd.write_modes_to_file()
+                    # tui.define.user_defined.execute_on_demand('"set_Field_udms::libudf"')
 
-            if CALC_MODES:
-                my_dmd.calc_DMD_modes(DT)
-                my_dmd.write_modes_to_file()
-                # tui.define.user_defined.execute_on_demand('"set_Field_udms::libudf"')
-
-            if APPLY_DMD:
-                IO.write_file(my_dmd.dmd_update_col)
-                tui.define.user_defined.execute_on_demand('"apply_update_par::libudf"')
+                if APPLY_DMD:
+                    IO.write_file(my_dmd.dmd_update_col)
+                    tui.define.user_defined.execute_on_demand('"apply_update_par::libudf"')
             
 
 residual_norm = np.array(res_norm)

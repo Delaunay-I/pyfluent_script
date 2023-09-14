@@ -80,15 +80,24 @@ class DMD:
             Sr_inv = np.linalg.inv(self.Sr)
             self.Atilde = self.Ur.T @ self.Y @ self.Vr @ Sr_inv
 
-            new_rank = self.refine_num_modes()
-            if new_rank < self.r:
-                self.log(f"Reducing rank from {self.r} to {new_rank}.")
-                self.r = new_rank
-            else:
-                break
+            try:
+                new_rank = self.refine_num_modes()
+                if new_rank < self.r:
+                    self.log(f"Reducing rank from {self.r} to {new_rank}.")
+                    self.r = new_rank
 
-        if (self.r < 9):
-            print(f"\033[1;31mThe current machine learning model for DMD automation is not applicable to this dataset.\nNumber of modes {self.r}\033[0m")
+                    if self.r == 0:
+                        raise ValueError("Error: Rank is reduced to 0. Discard the DMD update.")
+
+                else:
+                    break
+            except Exception as e:
+                # Handle other exceptions if needed
+                print(e)
+                return "RankZeroError"
+
+        # if (self.r < 9):
+        #     print(f"\033[1;31mThe current machine learning model for DMD automation is not applicable to this dataset.\nNumber of modes {self.r}\033[0m")
 
         I = np.identity(self.r)
         Gtilde = np.linalg.inv(I - self.Atilde) @ self.Atilde
@@ -102,6 +111,7 @@ class DMD:
         print(self.dmd_update_col.shape)
         # np.savetxt("solver_data/DMDUpdate.csv", self.dmd_update_col, delimiter='\t', fmt='%s')
 
+        return None
 
 
 
