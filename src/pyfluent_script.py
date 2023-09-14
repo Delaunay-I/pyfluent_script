@@ -11,21 +11,23 @@ import os
 
 from dmd import DMD
 from config_parser import get_configuration
+from functions import file_IO
+import time
+
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 NUM_SNAPS, NUM_DMD_MODES, ITER_NUM, DMD_ITER, NUM_VARS, case_file_path, outfName = get_configuration()
 
 DT = 1
 assert min(DMD_ITER) > NUM_SNAPS, "number of iterations is smaller than number of snapshots"
-FLAG_DMD = False
+FLAG_DMD = True
 CALC_MODES = True
 APPLY_DMD = True
-
 
 # =======================
 # Problem Setup
 # =======================
-solver = launch_fluent(version="2d", precision="double", processor_count=6, mode="solver")
+solver = launch_fluent(version="2d", precision="double", processor_count=11, mode="solver")
 
 tui = solver.tui
 # Read the mesh file and set the configuration
@@ -40,7 +42,7 @@ tui.define.user_defined.user_defined_memory(NUM_VARS + 3)
 tui.define.user_defined.auto_compile_compiled_udfs("no")
 tui.define.user_defined.compiled_functions("compile", "libudf", "y", "write_soln.c", "apply_update.c", "set_udms.c")
 tui.define.user_defined.compiled_functions("load", 'libudf')
-# tui.define.user_defined.function_hooks("execute-at-end", '"write_slimSoln_par_optimized::libudf"')
+tui.define.user_defined.function_hooks("execute-at-end", '"write_slimSoln_par::libudf"')
 
 
 tui.solve.monitors.residual.normalize('yes')
@@ -55,16 +57,22 @@ tui.solve.monitors.residual.n_display(ITER_NUM)
 # Initialize the snapshots matrix
 data = None
 solver.solution.initialization.hybrid_initialize()
+
+
+soln_file_path = os.path.normpath(os.path.join(script_dir, "..", "solver_data"))
+IO = file_IO(soln_file_path)
 res_norm = []
 
 for iter in range(1, ITER_NUM+1):
-    solver.solution.run_calculation.iterate(iter_count=1500)
+    start_time = time.time()
+    solver.solution.run_calculation.iterate(iter_count=1)
+    end_time = time.time()
+    print(f"\033[33mElapsed time: {end_time - start_time} seconds\033[0m")
 
 
     if FLAG_DMD:
-        soln_file_path = os.path.normpath(os.path.join(script_dir, "..", "solver_data", "soln.csv"))
-        df = pd.read_csv(soln_file_path, sep="\t", skiprows=1, index_col=0)
-        vSoln = np.concatenate([df[col] for col in df.columns[-NUM_VARS:]]).reshape(-1, 1)
+        vSoln = IO.read_soln()
+        print(vSoln.shape)
 
         if iter == 1:
             vSoln_old = vSoln
@@ -85,10 +93,7 @@ for iter in range(1, ITER_NUM+1):
             my_dmd.calc_DMD_modes(DT)
             my_dmd.write_modes_to_file()
             # tui.define.user_defined.execute_on_demand('"set_Field_udms::libudf"')
-            # tui.define.user_defined.execute_on_demand('"calc_Grads::libudf"')
 
-
-        # the ML automation pipelien is only applicable when we have 9 modes
         if APPLY_DMD:
             tui.define.user_defined.execute_on_demand('"apply_update_par::libudf"')
             

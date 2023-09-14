@@ -1,8 +1,10 @@
 from ansys.fluent.core import launch_fluent
-import re, sys
+import re, sys, glob
+
 from io import StringIO
 from scipy import stats
 import numpy as np
+import pandas as pd
 
 
 class TimeAdvance:
@@ -110,3 +112,33 @@ resWindow.shape: {self.resWindow.shape}\t LRx.shape: {self.LRx.shape}"""
         else:
             # If the pattern is not found in the input string, return None for all values
             return None, None, None, None
+
+class file_IO:
+    """
+    This class reads and writes files compatible for parallel data distribution.
+    It combines data from multiple files into one, 
+    and can also write data with the same structure of previously read data.
+    """
+    def __init__(self, file_path):
+        self.fpath = file_path
+
+        self.partition_sizes = []
+        self.file_numbers = []
+        self.first_call = True
+
+    def read_soln(self,):
+        file_pattern = self.fpath + '/soln_*.csv'
+        matching_files = glob.glob(file_pattern)
+
+        dataset = pd.DataFrame()
+        for file_name in matching_files:
+            tmp_df = pd.read_csv(file_name, sep='\t', header=None)
+            dataset = pd.concat([dataset, tmp_df], ignore_index=True)
+
+            if self.first_call:
+                self.partition_sizes.append(len(tmp_df))
+                self.file_numbers.append(int(file_name.split('_')[-1].split('.')[0]))
+
+            self.first_call = False
+
+        return dataset.to_numpy().flatten('F')[:, np.newaxis]
