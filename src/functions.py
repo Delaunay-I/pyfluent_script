@@ -138,17 +138,22 @@ class file_IO:
             if self.first_call:
                 self.partition_sizes.append(len(tmp_df))
                 self.file_numbers.append(int(file_name.split('_')[-1].split('.')[0]))
-
-            self.first_call = False
-
+            
+        self.first_call = False
         return dataset.to_numpy().flatten('F')[:, np.newaxis]
     
 
     def write_file(self, dataset):
         last_idx = 0
 
+        print(f""" partition sizes:{self.partition_sizes},
+              file numbers:{self.file_numbers}
+              """)
         for size, node in zip(self.partition_sizes, self.file_numbers):
             tmp_data = dataset[last_idx : last_idx + size]
-            print(tmp_data.shape)
-            np.savetxt(self.fpath + f"/update_{node}.csv", tmp_data, delimiter='\t')
+
+            fName = self.fpath + f"/update_{node}.csv"
+            np.savetxt(fName, tmp_data, delimiter='\t')
+
+            print(f"""Saved file {fName}, storing tmp_data with shape: {tmp_data.shape}""")
             last_idx = last_idx + size

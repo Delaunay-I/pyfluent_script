@@ -19,7 +19,7 @@ DEFINE_ON_DEMAND(apply_update_par)
     char filename[100];
     sprintf(filename, "solver_data/update_%d.csv", myid);
 
-    FILE *file = fopen(filename, "w");
+    FILE *file = fopen(filename, "r");
     if (file == NULL)
     {
         Message("\n Error: No write access to file %s. Abort UDF execution.\n", filename);
