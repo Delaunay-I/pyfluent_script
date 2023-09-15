@@ -22,7 +22,7 @@ DT = 1
 assert min(DMD_ITER) > NUM_SNAPS, """\033[91m
 number of iterations is smaller than number of snapshots
 \033[0m"""
-FLAG_DMD = True
+FLAG_DMD = False
 CALC_MODES = True
 APPLY_DMD = True
 
@@ -31,10 +31,12 @@ if FLAG_DMD:
 Decrease the number of Pre-iterations to collect the necessary snapshots from the solver.
     \033[0m"""
 
+total_iter_num = PRE_ITER_NUM + ITER_NUM
+
 # =======================
 # Problem Setup
 # =======================
-solver = launch_fluent(version="2d", precision="double", processor_count=11, mode="solver")
+solver = launch_fluent(version="3d", precision="double", processor_count=11, mode="solver")
 
 tui = solver.tui
 # Read the mesh file and set the configuration
@@ -46,30 +48,25 @@ tui.file.read_case(cas_file_path)
 tui.define.user_defined.user_defined_memory(NUM_VARS + 3)
 
 # Compile and load UDFs
-tui.define.user_defined.auto_compile_compiled_udfs("no")
-tui.define.user_defined.compiled_functions("compile", "libudf", "y", "write_soln.c", "apply_update.c", "set_udms.c")
-tui.define.user_defined.compiled_functions("load", 'libudf')
+# tui.define.user_defined.auto_compile_compiled_udfs("no")
+# tui.define.user_defined.compiled_functions("compile", "libudf", "y", "write_soln.c", "apply_update.c", "set_udms.c")
+# tui.define.user_defined.compiled_functions("load", 'libudf')
 
 
 tui.solve.monitors.residual.normalize('yes')
 tui.solve.monitors.residual.criterion_type(3) # Convergence checking is disabled.
-tui.solve.monitors.residual.n_save(ITER_NUM) # number of history points to be stored
-tui.solve.monitors.residual.n_display(ITER_NUM)
-
-
-# solver.solution.run_calculation.pseudo_time_settings.time_step_method.time_step_method = 'user-specified'
-# solver.solution.run_calculation.pseudo_time_settings.time_step_method.pseudo_time_step_size = DT
+tui.solve.monitors.residual.n_save(total_iter_num) # number of history points to be stored
+tui.solve.monitors.residual.n_display(total_iter_num)
 
 # Initialize the snapshots matrix
 data = None
 solver.solution.initialization.hybrid_initialize()
 solver.solution.run_calculation.iterate(iter_count=PRE_ITER_NUM)
 
-tui.define.user_defined.function_hooks("execute-at-end", '"write_slimSoln_par::libudf"')
+# tui.define.user_defined.function_hooks("execute-at-end", '"write_slimSoln_par::libudf"')
 
 soln_file_path = os.path.normpath(os.path.join(script_dir, "..", "solver_data"))
 IO = file_IO(soln_file_path)
-res_norm = []
 
 init_iter = PRE_ITER_NUM + 1
 for iter in range(init_iter, ITER_NUM+1):
@@ -81,7 +78,6 @@ for iter in range(init_iter, ITER_NUM+1):
 
     if FLAG_DMD:
         vSoln = IO.read_soln()
-        print(vSoln.shape)
 
         if iter == init_iter:
             vSoln_old = vSoln
@@ -107,10 +103,6 @@ for iter in range(init_iter, ITER_NUM+1):
                     IO.write_file(my_dmd.dmd_update_col)
                     tui.define.user_defined.execute_on_demand('"apply_update_par::libudf"')
             
-
-residual_norm = np.array(res_norm)
-np.savetxt('residual_avg.plt', residual_norm)
-
 # ===================
 # Visualization Part
 # ===================
