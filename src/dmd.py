@@ -31,8 +31,8 @@ class DMD:
         self.verbose = verbose
 
         self.data = data
-        self.X = self.data[:, :-1]
-        self.Y = self.data[:, 1:]
+        self._X = self.data[:, :-1]
+        self._Y = self.data[:, 1:]
 
         self.r = num_dmd_modes
         assert num_vars < 10
@@ -67,7 +67,7 @@ class DMD:
     def calc_DMD(self,):
         self.log('Starting DMD analysis.\nCalculating SVD...', self.VERBOSE_BASIC)
 
-        U, S, Vstar = np.linalg.svd(self.X, full_matrices=False)
+        U, S, Vstar = np.linalg.svd(self._X, full_matrices=False)
         np.savetxt("solver_data/singularvalues.csv", S)
         V = Vstar.T.conj()
         S_matrix = np.diag(S)
@@ -78,7 +78,7 @@ class DMD:
             self.Vr = V[:, :self.r]
 
             Sr_inv = np.linalg.inv(self.Sr)
-            self.Atilde = self.Ur.T @ self.Y @ self.Vr @ Sr_inv
+            self.Atilde = self.Ur.T @ self._Y @ self.Vr @ Sr_inv
 
             try:
                 new_rank = self.refine_num_modes()
@@ -101,26 +101,27 @@ class DMD:
 
         I = np.identity(self.r)
         Gtilde = np.linalg.inv(I - self.Atilde) @ self.Atilde
-        self.dmd_update = self.Ur @ Gtilde @ (self.Ur.T @ self.Y[:, -1])
+        dUpdate = self.Ur @ Gtilde @ (self.Ur.T @ self._Y[:, -1])
 
         self.log(f"cond(S): {np.linalg.cond(self.Sr):.2e}\ncond(Atilde): {np.linalg.cond(self.Atilde):.2e}\ncond(Gtilde): {np.linalg.cond(Gtilde):.2e}", self.VERBOSE_DETAILED)
 
-        # split_data = np.array_split(np.real(self.dmd_update), self.num_vars, axis=0)
-        # np.savetxt("solver_data/DMDUpdate.csv", np.column_stack(split_data), delimiter='\t', fmt='%s')
+        self.dmd_update = dUpdate.reshape(-1, self.num_vars).T
+        np.savetxt("solver_data/DMDUpdate.csv", self.dmd_update, delimiter='\t', fmt='%s')
 
         return None
 
     @profile
     def calc_DMD_modes(self, dt: int):
         end_time = dt * (self.data.shape[1] - 1)
-
+        numModes = 5
         self.log("Calculating solution mode time-dynamics.", self.VERBOSE_BASIC)
-        if self.r > 10:
+        if self.r > numModes:
             self.log("Calculating only the first 10 modes.", self.VERBOSE_BASIC)
-            self.Atilde = self.Ur[:, :9].T @ self.Y @ self.Vr[:, :9] @ np.linalg.inv(self.Sr[:9, :9])
+            Ur = self.Ur[:, :numModes]
+            Vr = self.Vr[:, :numModes]
+            Sr_inv = np.linalg.inv(self.Sr[:numModes, :numModes])
+            self.Atilde = Ur.T @ self._Y @ Vr @ Sr_inv
         eigs, W = np.linalg.eig(self.Atilde)
-        # Check the size of the eigenvectors
-        assert W.shape == (self.r, self.r), "Size of eigenvectors is incorrect"
 
         # Sort the eigenvalues and eigenvectors
         idx = np.argsort(eigs)[::-1]
@@ -132,7 +133,7 @@ class DMD:
 
         np.savetxt("solver_data/amps.csv", self.eigs)
         # Reconstructing the high-dimensional DMD modes from the r sub-space
-        self.Phi = self.Y @ self.Vr @ np.linalg.inv(self.Sr) @ self.W
+        self.Phi = self._Y @ Vr @ Sr_inv @ self.W
 
         self.omega = np.log(self.eigs)/dt # shape: (r,)
         assert np.all(np.isinf(self.omega)) == False, "Omega values have inf"
@@ -144,7 +145,7 @@ class DMD:
         self._b = b.T # shape: (r,)
 
         t = np.arange(0, 20*end_time, dt)
-        self.time_dynamics = np.empty((len(t), self.r))
+        self.time_dynamics = np.empty((len(t), numModes))
         for iter in range(0, len(t)):
             self.time_dynamics[iter, :] = np.real(self._b*np.exp(self.omega*t[iter]))
 

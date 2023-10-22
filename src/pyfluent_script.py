@@ -22,7 +22,7 @@ DT = 1
 assert min(DMD_ITER) > NUM_SNAPS, """\033[91m
 number of iterations is smaller than number of snapshots
 \033[0m"""
-FLAG_DMD = False
+FLAG_DMD = True
 CALC_MODES = True
 APPLY_DMD = True
 
@@ -36,7 +36,7 @@ total_iter_num = PRE_ITER_NUM + ITER_NUM
 # =======================
 # Problem Setup
 # =======================
-solver = launch_fluent(version="3d", precision="double", processor_count=11, mode="solver")
+solver = launch_fluent(version="2d", precision="double", processor_count=1, mode="solver")
 
 tui = solver.tui
 # Read the mesh file and set the configuration
@@ -48,9 +48,9 @@ tui.file.read_case(cas_file_path)
 tui.define.user_defined.user_defined_memory(NUM_VARS + 3)
 
 # Compile and load UDFs
-# tui.define.user_defined.auto_compile_compiled_udfs("no")
-# tui.define.user_defined.compiled_functions("compile", "libudf", "y", "write_soln.c", "apply_update.c", "set_udms.c")
-# tui.define.user_defined.compiled_functions("load", 'libudf')
+tui.define.user_defined.auto_compile_compiled_udfs("no")
+tui.define.user_defined.compiled_functions("compile", "libudf", "y", "write_soln.c", "apply_update.c", "set_udms.c")
+tui.define.user_defined.compiled_functions("load", 'libudf')
 
 
 tui.solve.monitors.residual.normalize('yes')
@@ -63,7 +63,7 @@ data = None
 solver.solution.initialization.hybrid_initialize()
 solver.solution.run_calculation.iterate(iter_count=PRE_ITER_NUM)
 
-# tui.define.user_defined.function_hooks("execute-at-end", '"write_slimSoln_par::libudf"')
+tui.define.user_defined.function_hooks("execute-at-end", '"write_slimSoln_par::libudf"')
 
 soln_file_path = os.path.normpath(os.path.join(script_dir, "..", "solver_data"))
 IO = file_IO(soln_file_path)
@@ -100,7 +100,7 @@ for iter in range(init_iter, ITER_NUM+1):
                     # tui.define.user_defined.execute_on_demand('"set_Field_udms::libudf"')
 
                 if APPLY_DMD:
-                    IO.write_file(my_dmd.dmd_update_col)
+                    IO.write_file(my_dmd.dmd_update)
                     tui.define.user_defined.execute_on_demand('"apply_update_par::libudf"')
             
 # ===================
