@@ -1,7 +1,8 @@
 import os
 import numpy as np
 from scipy.linalg import eigvals
-import math
+from memory_profiler import profile
+import cython
 
 output_directory = 'solver_data'
 
@@ -30,8 +31,8 @@ class DMD:
         self.verbose = verbose
 
         self.data = data
-        self.X = data[:, :-1]
-        self.Y = data[:, 1:]
+        self.X = cython.view.array(self.data[:, :-1])
+        self.Y = cython.view.array(self.data[:, 1:])
 
         self.r = num_dmd_modes
         assert num_vars < 10
@@ -45,15 +46,13 @@ class DMD:
         self.eigs = None
         self.W = None
 
-        self.b = None
+        self._b = None
 
         self.Phi = None
         self.omega = None
         self.time_dynamics = None
-        self.time_dynamics2 = None
         self.Atilde = None
         self.dmd_update = None
-        self.dmd_update_col = None
 
         # Vector data for ML analysis
         self.dmd_dataset = np.array([])
@@ -64,6 +63,7 @@ class DMD:
         if level <= self.verbose:
             print(message)
 
+    @profile
     def calc_DMD(self,):
         self.log('Starting DMD analysis.\nCalculating SVD...', self.VERBOSE_BASIC)
 
@@ -105,21 +105,19 @@ class DMD:
 
         self.log(f"cond(S): {np.linalg.cond(self.Sr):.2e}\ncond(Atilde): {np.linalg.cond(self.Atilde):.2e}\ncond(Gtilde): {np.linalg.cond(Gtilde):.2e}", self.VERBOSE_DETAILED)
 
-
-        split_data = np.array_split(np.real(self.dmd_update), self.num_vars, axis=0)
-        self.dmd_update_col = np.column_stack(split_data)
-        print(self.dmd_update_col.shape)
-        # np.savetxt("solver_data/DMDUpdate.csv", self.dmd_update_col, delimiter='\t', fmt='%s')
+        # split_data = np.array_split(np.real(self.dmd_update), self.num_vars, axis=0)
+        # np.savetxt("solver_data/DMDUpdate.csv", np.column_stack(split_data), delimiter='\t', fmt='%s')
 
         return None
 
-
-
+    @profile
     def calc_DMD_modes(self, dt: int):
         end_time = dt * (self.data.shape[1] - 1)
-        t = np.arange(0, end_time, dt) # shape: (r,)
 
-        self.log("Calculating solution mode time-dynamics...", self.VERBOSE_BASIC)
+        self.log("Calculating solution mode time-dynamics.", self.VERBOSE_BASIC)
+        if self.r > 10:
+            self.log("Calculating only the first 10 modes.", self.VERBOSE_BASIC)
+            self.Atilde = self.Ur[:, :9].T @ self.Y @ self.Vr[:, :9] @ np.linalg.inv(self.Sr[:9, :9])
         eigs, W = np.linalg.eig(self.Atilde)
         # Check the size of the eigenvectors
         assert W.shape == (self.r, self.r), "Size of eigenvectors is incorrect"
@@ -142,28 +140,18 @@ class DMD:
 
         # Doing least-squares to find initial solution
         x1 = self.data[:, 0]
-        b, res, rnk, singularvalues = np.linalg.lstsq(self.Phi, x1, rcond=None)
-        self.b = b.T # shape: (r,)
+        b, *_ = np.linalg.lstsq(self.Phi, x1, rcond=None)
+        self._b = b.T # shape: (r,)
 
+        t = np.arange(0, 20*end_time, dt)
         self.time_dynamics = np.empty((len(t), self.r))
         for iter in range(0, len(t)):
-            self.time_dynamics[iter, :] = np.real(self.b*np.exp(self.omega*t[iter]))
-
-        # You can play with this variable (time_multiplier) to predict further in the future
-        time_multiplier = 20
-        t2 = np.arange(0, time_multiplier*end_time, dt)
-        self.time_dynamics2 = np.empty((len(t2), self.r))
-        for iter in range(0, len(t2)):
-            self.time_dynamics2[iter, :] = np.real(self.b*np.exp(self.omega*t2[iter]))
+            self.time_dynamics[iter, :] = np.real(self._b*np.exp(self.omega*t[iter]))
 
         sOutputName = 'time_dynamics.csv'
         sOutputName = os.path.join(output_directory, sOutputName)
         self.log(f"Writing the DMD time-dynamics to file {sOutputName}", self.VERBOSE_DETAILED)
         np.savetxt(sOutputName, self.time_dynamics)
-        sOutputName = 'time_dynamics2.csv'
-        sOutputName = os.path.join(output_directory, sOutputName)
-        self.log(f"Writing the DMD time-dynamics (longer - predicted) to file {sOutputName}", self.VERBOSE_DETAILED)
-        np.savetxt(sOutputName, self.time_dynamics2)
 
 
     def write_modes_to_file(self,) -> None:
@@ -216,7 +204,7 @@ class DMD:
         amps = self.eigs[:9]
         eigs = self.omega[:9]
         energies = None
-        mode_residual_predictions = abs(self.b*np.exp(self.omega*20))[:9]
+        mode_residual_predictions = abs(self._b*np.exp(self.omega*20))[:9]
 
         # computing DMD mode energies
         epsilon = np.linalg.inv(self.W) @ self.Sr @ self.Vr.conj().T
