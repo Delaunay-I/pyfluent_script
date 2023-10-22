@@ -31,8 +31,8 @@ class DMD:
         self.verbose = verbose
 
         self.data = data
-        self.X = cython.view.array(self.data[:, :-1])
-        self.Y = cython.view.array(self.data[:, 1:])
+        self.X = self.data[:, :-1]
+        self.Y = self.data[:, 1:]
 
         self.r = num_dmd_modes
         assert num_vars < 10
