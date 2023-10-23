@@ -26,8 +26,8 @@ def read_resNorm(filename):
 
 
 def plot_residuals():
-    res_regular = read_resNorm('./out/res/naca0012_res.plt')
-    res_acc = read_resNorm('./out/res/naca_SIMPLE_res.plt')
+    res_regular = read_resNorm('./out/res/naca_SIMPLE_res.plt')
+    # res_acc = read_resNorm('./out/res/lid_driven_cavity_res_dmd.plt')
     # res_acc1 = read_resNorm('./out/res/naca0012DMDi550_s100_m25_res.plt')
     # res2 = read_resNorm('./out/res/naca0012DMDi550_s25_m24_res.plt')
 
@@ -42,33 +42,38 @@ def plot_residuals():
     # plt.plot(res2[:, 1], color=color, linestyle=style, alpha=opacity)
     # plt.plot(res2[:, 2], color=color, linestyle=style, alpha=opacity)
 
-    color = 'magenta'
-    style = ':'
-    opacity = .75
-    preLabel = "s100-m9"
-    plt.plot(res_acc[:, 0], color=color, linestyle=style, alpha=opacity, label=preLabel)
-    plt.plot(res_acc[:, 1], color=color, linestyle=style, alpha=opacity)
-    plt.plot(res_acc[:, 2], color=color, linestyle=style, alpha=opacity)
+    color = 'black'
+    style = '-'
+    opacity = 1
+    preLabel = ""
+    # res_avg_dmd = (res_acc[1:700, 0] + res_acc[1:700, 1] + res_acc[1:700, 2])/3
+    res_avg = (res_regular[1:, 0] + res_regular[1:, 1] + res_regular[1:, 2])/3
+
+
+    plt.plot(res_avg, color='purple', linestyle="-", alpha=1, label="Regular T-A", zorder=-1)
+    # plt.plot(res_avg_dmd, color=color, linestyle=style, alpha=opacity, label="DMD: [400]")
+    # plt.plot(res_acc[:, 2], color=color, linestyle=style, alpha=opacity)
 
     # preLabel = "s100-m25"
     # plt.plot(res_acc1[:, 0], color='darkblue', linestyle='-.')
     # plt.plot(res_acc1[:, 1], color='darkblue', linestyle='-.')
     # plt.plot(res_acc1[:, 2], color='darkblue', linestyle='-.', label=preLabel)
 
-    plt.plot(res_regular[:, 0], label='continuity', color='peru')
-    plt.plot(res_regular[:, 1], label='x-velocity', color='dodgerblue')
-    plt.plot(res_regular[:, 2], label='y-velocity', color='k')
+    # plt.plot(res_regular[:, 0], label='continuity', color='peru')
+    # plt.plot(res_regular[:, 1], label='x-velocity', color='dodgerblue')
+    # plt.plot(res_regular[:, 2], label='y-velocity', color='k')
 
     plt.xlabel('Iteration')
-    plt.ylabel("Residuals")
+    plt.ylabel("Residual norm")
+    plt.title("Lid-driven cavity, Ansys solver")
     plt.grid(True, alpha=0.5, linestyle='--')
     plt.legend()
 
     plt.yscale('log')
-    # plt.ylim(10**-12, 10**0)
+    # plt.ylim(1e-13, 1)
 
     plt.tight_layout()
-    # plt.savefig("C:\\Users\\amirshah\OneDrive - ANSYS, Inc\\Pictures\\fig1.png", dpi=180)
+    plt.savefig("C:\\Users\\amirshah\OneDrive - ANSYS, Inc\\Pictures\\fig1.png", dpi=180)
     plt.show()
 
 
@@ -114,13 +119,13 @@ def plot_mode_progression():
 def plot_time_dynamics_and_eigs():
     fig, ((ax1, ax2) , (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 8))
 
-    res_regular = read_resNorm('./out/res/naca0012_res.plt')
+    res_regular = read_resNorm('./out/res/archive/naca0012_res.plt')
     res_acc = read_resNorm('./out/res/naca_SIMPLE_res.plt')
 
-    color = 'magenta'
+    color = 'darkgreen'
     style = ':'
     opacity = .75
-    preLabel = "s100-m51"
+    preLabel = "parallel"
     ax1.plot(res_acc[:, 0], color=color, linestyle=style, alpha=opacity, label=preLabel)
     ax1.plot(res_acc[:, 1], color=color, linestyle=style, alpha=opacity)
     ax1.plot(res_acc[:, 2], color=color, linestyle=style, alpha=opacity)
@@ -214,8 +219,8 @@ def plot_eigs():
     # plt.savefig('results/dmd time-dynamics predicted.png', dpi=300)
     plt.show()
 
-# plot_residuals()
+plot_residuals()
 # plot_mode_progression()
 
-plot_time_dynamics_and_eigs()
+# plot_time_dynamics_and_eigs()
 # plot_eigs()

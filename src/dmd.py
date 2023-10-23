@@ -105,7 +105,8 @@ class DMD:
 
         self.log(f"cond(S): {np.linalg.cond(self.Sr):.2e}\ncond(Atilde): {np.linalg.cond(self.Atilde):.2e}\ncond(Gtilde): {np.linalg.cond(Gtilde):.2e}", self.VERBOSE_DETAILED)
 
-        self.dmd_update = dUpdate.reshape(-1, self.num_vars).T
+        split_data = np.array_split(np.real(dUpdate), self.num_vars, axis=0)
+        self.dmd_update = np.column_stack(split_data)
         np.savetxt("solver_data/DMDUpdate.csv", self.dmd_update, delimiter='\t', fmt='%s')
 
         return None

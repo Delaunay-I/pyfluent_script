@@ -36,7 +36,7 @@ total_iter_num = PRE_ITER_NUM + ITER_NUM
 # =======================
 # Problem Setup
 # =======================
-solver = launch_fluent(version="2d", precision="double", processor_count=1, mode="solver")
+solver = launch_fluent(version="3d", precision="double", processor_count=11, mode="solver")
 
 tui = solver.tui
 # Read the mesh file and set the configuration
