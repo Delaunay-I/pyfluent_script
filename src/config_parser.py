@@ -28,12 +28,12 @@ def get_configuration():
 
     NUM_SNAPS = args.nSnapshots
     NUM_DMD_MODES = args.nDMDmodes
-    ITER_NUM = args.nIter
     PRE_ITER_NUM = args.preIters
     DMD_ITER = args.dmd_iters
+    POST_ITER_NUM = args.nIter
     NUM_VARS = args.nvars
     case_file_path = args.case
     cas_name = os.path.basename(case_file_path)
-    outfName = cas_name.replace(".cas.h5", "") #+ 'DMDi' + str(DMD_ITER[0]) + '_s' + str(NUM_SNAPS) + '_m' + str(NUM_DMD_MODES)
+    outfName = cas_name.replace(".cas.h5", "") + 'DMDi' + str(DMD_ITER[0]) + '_s' + str(NUM_SNAPS) + '_m' + str(NUM_DMD_MODES)
 
-    return NUM_SNAPS, NUM_DMD_MODES, ITER_NUM, PRE_ITER_NUM, DMD_ITER, NUM_VARS, case_file_path, outfName
+    return NUM_SNAPS, NUM_DMD_MODES, PRE_ITER_NUM, DMD_ITER, POST_ITER_NUM, NUM_VARS, case_file_path, outfName

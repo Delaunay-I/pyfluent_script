@@ -16,7 +16,7 @@ import time
 
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
-NUM_SNAPS, NUM_DMD_MODES, ITER_NUM, PRE_ITER_NUM, DMD_ITER, NUM_VARS, case_file_path, outfName = get_configuration()
+NUM_SNAPS, NUM_DMD_MODES, PRE_ITER_NUM, DMD_ITER, POST_ITER_NUM, NUM_VARS, case_file_path, outfName = get_configuration()
 
 DT = 1
 assert min(DMD_ITER) > NUM_SNAPS, """\033[91m
@@ -31,12 +31,12 @@ if FLAG_DMD:
 Decrease the number of Pre-iterations to collect the necessary snapshots from the solver.
     \033[0m"""
 
-total_iter_num = PRE_ITER_NUM + ITER_NUM
+total_iter_num = PRE_ITER_NUM + DMD_ITER[-1] + ITER_NUM + 2
 
 # =======================
 # Problem Setup
 # =======================
-solver = launch_fluent(version="3d", precision="double", processor_count=11, mode="solver")
+solver = launch_fluent(version="2d", precision="double", processor_count=11, mode="solver")
 
 tui = solver.tui
 # Read the mesh file and set the configuration
@@ -69,7 +69,7 @@ soln_file_path = os.path.normpath(os.path.join(script_dir, "..", "solver_data"))
 IO = file_IO(soln_file_path)
 
 init_iter = PRE_ITER_NUM + 1
-for iter in range(init_iter, ITER_NUM+1):
+for iter in range(init_iter, DMD_ITER[-1] + 1):
     start_time = time.time()
     solver.solution.run_calculation.iterate(iter_count=1)
     end_time = time.time()
@@ -97,11 +97,14 @@ for iter in range(init_iter, ITER_NUM+1):
                 if CALC_MODES:
                     my_dmd.calc_DMD_modes(DT)
                     my_dmd.write_modes_to_file()
-                    # tui.define.user_defined.execute_on_demand('"set_Field_udms::libudf"')
+                    tui.define.user_defined.execute_on_demand('"set_Field_udms::libudf"')
 
                 if APPLY_DMD:
                     IO.write_file(my_dmd.dmd_update)
                     tui.define.user_defined.execute_on_demand('"apply_update_par::libudf"')
+
+
+solver.solution.run_calculation.iterate(iter_count=PRE_ITER_NUM)
             
 # ===================
 # Visualization Part
