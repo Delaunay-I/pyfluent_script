@@ -1,8 +1,6 @@
 import os
 import numpy as np
 from scipy.linalg import eigvals
-from memory_profiler import profile
-import cython
 
 output_directory = 'solver_data'
 
@@ -63,7 +61,6 @@ class DMD:
         if level <= self.verbose:
             print(message)
 
-    @profile
     def calc_DMD(self,):
         self.log('Starting DMD analysis.\nCalculating SVD...', self.VERBOSE_BASIC)
 
@@ -111,7 +108,6 @@ class DMD:
 
         return None
 
-    @profile
     def calc_DMD_modes(self, dt: int):
         end_time = dt * (self.data.shape[1] - 1)
         numModes = 5
