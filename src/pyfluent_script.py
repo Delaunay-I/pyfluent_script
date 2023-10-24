@@ -31,7 +31,7 @@ if FLAG_DMD:
 Decrease the number of Pre-iterations to collect the necessary snapshots from the solver.
     \033[0m"""
 
-total_iter_num = PRE_ITER_NUM + DMD_ITER[-1] + ITER_NUM + 2
+total_iter_num = PRE_ITER_NUM + DMD_ITER[-1] + POST_ITER_NUM + 2
 
 # =======================
 # Problem Setup
@@ -104,7 +104,7 @@ for iter in range(init_iter, DMD_ITER[-1] + 1):
                     tui.define.user_defined.execute_on_demand('"apply_update_par::libudf"')
 
 
-solver.solution.run_calculation.iterate(iter_count=PRE_ITER_NUM)
+solver.solution.run_calculation.iterate(iter_count=POST_ITER_NUM)
             
 # ===================
 # Visualization Part
