@@ -26,8 +26,9 @@ def read_resNorm(filename):
 
 
 def plot_residuals():
-    res_regular = read_resNorm('./out/res/naca_SIMPLE_res.plt')
-    # res_acc = read_resNorm('./out/res/lid_driven_cavity_res_dmd.plt')
+    res_reg = read_resNorm('./out/res/archive/fl512_R18_merged_res.plt')
+    res_acc = read_resNorm('./out/res/fl512_R18_mergedDMDi1200_s100_m80_res.plt')
+
     # res_acc1 = read_resNorm('./out/res/naca0012DMDi550_s100_m25_res.plt')
     # res2 = read_resNorm('./out/res/naca0012DMDi550_s25_m24_res.plt')
 
@@ -42,17 +43,15 @@ def plot_residuals():
     # plt.plot(res2[:, 1], color=color, linestyle=style, alpha=opacity)
     # plt.plot(res2[:, 2], color=color, linestyle=style, alpha=opacity)
 
-    color = 'black'
+    res_avg = (res_reg[1:, 0] + res_reg[1:, 1] + res_reg[1:, 2])/3
+    plt.plot(res_avg, color='purple', linestyle="-.", alpha=1, label="Regular T-A", zorder=-1)
+
+    color = 'blue'
     style = '-'
     opacity = 1
     preLabel = ""
-    # res_avg_dmd = (res_acc[1:700, 0] + res_acc[1:700, 1] + res_acc[1:700, 2])/3
-    res_avg = (res_regular[1:, 0] + res_regular[1:, 1] + res_regular[1:, 2])/3
-
-
-    plt.plot(res_avg, color='purple', linestyle="-", alpha=1, label="Regular T-A", zorder=-1)
-    # plt.plot(res_avg_dmd, color=color, linestyle=style, alpha=opacity, label="DMD: [400]")
-    # plt.plot(res_acc[:, 2], color=color, linestyle=style, alpha=opacity)
+    res_avg2 = (res_acc[1:, 0] + res_acc[1:, 1] + res_acc[1:, 2])/3
+    plt.plot(res_avg2, color=color, linestyle=style, alpha=opacity, label="DMD")
 
     # preLabel = "s100-m25"
     # plt.plot(res_acc1[:, 0], color='darkblue', linestyle='-.')

@@ -14,6 +14,8 @@ from config_parser import get_configuration
 from functions import file_IO
 import time
 
+beginning_time = time.time()
+
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 NUM_SNAPS, NUM_DMD_MODES, PRE_ITER_NUM, DMD_ITER, POST_ITER_NUM, NUM_VARS, case_file_path, outfName = get_configuration()
@@ -36,7 +38,7 @@ total_iter_num = PRE_ITER_NUM + DMD_ITER[-1] + POST_ITER_NUM + 2
 # =======================
 # Problem Setup
 # =======================
-solver = launch_fluent(version="2d", precision="double", processor_count=11, mode="solver")
+solver = launch_fluent(version="3d", precision="double", processor_count=11, mode="solver")
 
 tui = solver.tui
 # Read the mesh file and set the configuration
@@ -73,7 +75,7 @@ for iter in range(init_iter, DMD_ITER[-1] + 1):
     start_time = time.time()
     solver.solution.run_calculation.iterate(iter_count=1)
     end_time = time.time()
-    print(f"\033[33mElapsed time: {end_time - start_time} seconds\033[0m")
+    print(f"Elapsed time: {end_time - start_time} seconds.")
 
 
     if FLAG_DMD:
@@ -146,3 +148,8 @@ solver.file.write(file_name=outfName, file_type="data")
 
 
 solver.exit()
+
+finish_time = time.time()
+print(f"Elapsed time: {finish_time - beginning_time} seconds.")
+
+
