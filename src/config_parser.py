@@ -17,7 +17,7 @@ def get_configuration():
     parser.add_argument("-case", type=str, help="path to the CASE file")
     parser.add_argument("-nvars", type=int, help="Set the number of variables.")
     parser.add_argument("-dmd_iters", type=int, nargs='*', help="Iterations to do DMD analysis")
-    parser.add_argument("-nIter", type=int, help="number of iterations for the solver")
+    parser.add_argument("-postIters", type=int, help="number of iterations after the last DMD update")
     parser.add_argument("-preIters", type=int, help="number of pre-iterations for the solver")
     parser.add_argument("-nSnapshots", type=int, help="Number of snapshots for DMD")
     parser.add_argument("-nDMDmodes", type=int, help="Number of DMD modes to use")
@@ -30,7 +30,7 @@ def get_configuration():
     NUM_DMD_MODES = args.nDMDmodes
     PRE_ITER_NUM = args.preIters
     DMD_ITER = args.dmd_iters
-    POST_ITER_NUM = args.nIter
+    POST_ITER_NUM = args.postIters
     NUM_VARS = args.nvars
     case_file_path = args.case
     cas_name = os.path.basename(case_file_path)
